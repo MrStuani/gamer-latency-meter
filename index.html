@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title data-i18n="meta.title">Gamer Peripheral Latency Meter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="head-top">
+      <div class="head-text">
+        <h1 data-i18n="header.title">Gamer Peripheral Latency Meter</h1>
+        <p class="sub">
+          <span data-i18n="header.sub">RP2350 · PIO timestamp · WebSerial · </span>
+          <span id="conn-hint" data-i18n="header.hint">brute-offline: open via file:// or GitHub Pages</span>
+        </p>
+      </div>
+      <label class="lang-switch">
+        <span data-i18n="lang.label">Language</span>
+        <select id="lang-sel" aria-label="Language"></select>
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== conexão ===================== -->
+    <section class="card" id="sec-connect">
+      <h2 data-i18n="conn.title">Connection</h2>
+      <div class="row">
+        <button id="btn-connect" class="primary" data-i18n="conn.connectBtn">Connect to meter</button>
+        <button id="btn-disconnect" disabled data-i18n="conn.disconnectBtn">Disconnect</button>
+        <span id="conn-state" class="state idle" data-i18n="conn.stateIdle">disconnected</span>
+      </div>
+      <div id="ws-warn" class="warn hidden" data-i18n="ws.warn">WebSerial is not available in this browser.
+        Use Chrome/Edge (desktop) with HTTPS or localhost/GitHub Pages.</div>
+    </section>
+
+    <!-- ===================== ligação / pinagem ===================== -->
+    <section class="card" id="sec-wiring">
+      <h2 data-i18n="wiring.title">Wiring (Pico 2 pinout)</h2>
+      <div class="wiring">
+        <svg viewBox="0 0 700 470" role="img" data-i18n-attr="aria-label:wiring.svgAria;title:wiring.svgTitle">
+          <title data-i18n="wiring.svgTitle">Pico 2 pinout — T0, T1_CLICK, T1_MOTION and GND</title>
+          <!-- placa -->
+          <rect x="150" y="44" width="500" height="348" rx="16" fill="#151a26" stroke="#2b3650" stroke-width="2"/>
+
+          <!-- conector USB-C no topo -->
+          <rect x="356" y="20" width="88" height="24" rx="6" fill="#2b3650" stroke="#3a4a66"/>
+          <rect x="372" y="20" width="56" height="24" fill="none" stroke="#56657f" stroke-width="0.8"/>
+          <text x="400" y="36" text-anchor="middle" fill="#7c8aa5" font-size="8">USB-C</text>
+
+          <!-- LED (GP25) e BOOTSEL no canto superior esquerdo -->
+          <rect x="208" y="66" width="46" height="14" rx="7" fill="#ffb648"/>
+          <text x="231" y="77" text-anchor="middle" fill="#151a26" font-size="7" font-weight="700">GP25 LED</text>
+          <rect x="208" y="94" width="46" height="13" rx="3" fill="#232f45" stroke="#3a4a66"/>
+          <text x="231" y="103.6" text-anchor="middle" fill="#7c8aa5" font-size="7">BOOTSEL</text>
+
+          <!-- chip -->
+          <rect x="318" y="196" width="190" height="84" rx="8" fill="#0d1117" stroke="#2b3650" stroke-width="1.5"/>
+          <text x="413" y="230" text-anchor="middle" fill="#dbe4f0" font-size="15" font-weight="600">RP2350</text>
+          <text x="488" y="223" anchor="middle" fill="#7c8aa5" font-size="10" >A</text>
+          <text x="413" y="250" text-anchor="middle" fill="#56657f" font-size="7">dual arm Cortex-M33</text>
+
+          <!-- logo -->
+          <rect x="358" y="330" width="110" height="26" rx="13" fill="none" stroke="#2b3650"/>
+          <text x="413" y="347" text-anchor="middle" fill="#7c8aa5" font-size="10">Pico 2</text>
+          <text x="413" y="368" text-anchor="middle" fill="#56657f" font-size="7">Raspberry Pi</text>
+
+          <!-- cristal (lado direito, junto ao pino 34) -->
+          <rect x="560" y="118" width="26" height="60" rx="2" fill="#1f2735" stroke="#3a4a66"/>
+          <line x1="560" y1="130" x2="586" y2="130" stroke="#3a4a66"/>
+          <line x1="560" y1="166" x2="586" y2="166" stroke="#3a4a66"/>
+          <text x="590" y="134" fill="#7c8aa5" font-size="6.5">cristal</text>
+
+          <!-- pinos esquerda (1..20) e direita (40..21) -->
+          <!-- y = 90 + i*12 -->
+          <g font-size="7.5" fill="#56657f">
+            <text x="158" y="94"  >1</text><text x="158" y="106" >2</text><text x="158" y="118" >3</text><text x="158" y="130" >4</text><text x="158" y="142" >5</text>
+            <text x="158" y="154" >6</text><text x="158" y="166" >7</text><text x="158" y="178" >8</text><text x="158" y="190" >9</text><text x="158" y="202" >10</text>
+            <text x="158" y="214" >11</text><text x="158" y="226">12</text><text x="158" y="238">13</text><text x="158" y="250">14</text><text x="158" y="262">15</text>
+            <text x="158" y="274" >16</text><text x="158" y="286">17</text><text x="158" y="298">18</text><text x="158" y="310">19</text><text x="158" y="322">20</text>
+
+            <text x="634" y="94"   text-anchor="end">40</text><text x="634" y="106"  text-anchor="end">39</text><text x="634" y="118"  text-anchor="end">38</text><text x="634" y="130"  text-anchor="end">37</text>
+            <text x="634" y="142"  text-anchor="end">36</text><text x="634" y="154"  text-anchor="end">35</text><text x="634" y="166"  text-anchor="end">34</text><text x="634" y="178"  text-anchor="end">33</text>
+            <text x="634" y="190"  text-anchor="end">32</text><text x="634" y="202"  text-anchor="end">31</text><text x="634" y="214"  text-anchor="end">30</text><text x="634" y="226"  text-anchor="end">29</text>
+            <text x="634" y="238"  text-anchor="end">28</text><text x="634" y="250"  text-anchor="end">27</text><text x="634" y="262"  text-anchor="end">26</text><text x="634" y="274"  text-anchor="end">25</text>
+            <text x="634" y="286"  text-anchor="end">24</text><text x="634" y="298"  text-anchor="end">23</text><text x="634" y="310"  text-anchor="end">22</text><text x="634" y="322"  text-anchor="end">21</text>
+          </g>
+
+          <!-- anotações do lado direito (como na placa) -->
+          <g font-size="7" fill="#56657f">
+            <text x="666" y="94">VBUS</text><text x="666" y="106">VSYS</text>
+            <text x="666" y="118" fill="#8fa3c0">GND</text><text x="666" y="130">EN</text><text x="666" y="142">3V3_OUT</text>
+            <text x="666" y="178" fill="#8fa3c0">GND</text><text x="666" y="238" fill="#8fa3c0">GND</text><text x="666" y="298" fill="#8fa3c0">GND</text>
+          </g>
+
+          <!-- pinos GND (terra comum) -->
+          <g fill="#44576f" stroke="#56657f" stroke-width="0.5">
+            <line x1="132" y1="114" x2="150" y2="114"/><circle cx="132" cy="114" r="6"/>
+            <line x1="132" y1="174" x2="150" y2="174"/><circle cx="132" cy="174" r="6"/>
+            <line x1="132" y1="234" x2="150" y2="234"/><circle cx="132" cy="234" r="6"/>
+            <line x1="132" y1="294" x2="150" y2="294"/><circle cx="132" cy="294" r="6"/>
+            <line x1="650" y1="114" x2="634" y2="114"/><circle cx="650" cy="114" r="6"/>
+            <line x1="650" y1="174" x2="634" y2="174"/><circle cx="650" cy="174" r="6"/>
+            <line x1="650" y1="234" x2="634" y2="234"/><circle cx="650" cy="234" r="6"/>
+            <line x1="650" y1="294" x2="634" y2="294"/><circle cx="650" cy="294" r="6"/>
+          </g>
+          <text x="124" y="118" text-anchor="end" fill="#8fa3c0" font-size="7">GND</text>
+
+          <!-- T0 = GP2 (pino 4) -->
+          <line x1="120" y1="126" x2="126" y2="126" stroke="#4da3ff" stroke-width="1"/>
+          <circle cx="132" cy="126" r="6" fill="#4da3ff"/>
+          <text x="124" y="129" text-anchor="end" fill="#4da3ff" font-size="9" font-weight="600">GP2 = T0</text>
+
+          <!-- T1_CLICK = GP3 (pino 5) -->
+          <line x1="120" y1="138" x2="126" y2="138" stroke="#39d0a0" stroke-width="1"/>
+          <circle cx="132" cy="138" r="6" fill="#39d0a0"/>
+          <text x="124" y="141" text-anchor="end" fill="#39d0a0" font-size="9" font-weight="600">GP3 = T1_CLICK</text>
+
+          <!-- T1_MOTION = GP4 (pino 6) -->
+          <line x1="120" y1="150" x2="126" y2="150" stroke="#ffb648" stroke-width="1"/>
+          <circle cx="132" cy="150" r="6" fill="#ffb648"/>
+          <text x="124" y="153" text-anchor="end" fill="#ffb648" font-size="9" font-weight="600">GP4 = T1_MOTION</text>
+
+          <!-- pinos restantes (sem uso) -->
+          <g fill="#232f45" stroke="#3a4a66" stroke-width="0.5">
+            <line x1="132" y1="90" x2="150" y2="90"/><circle cx="132" cy="90" r="6"/>
+            <line x1="132" y1="102" x2="150" y2="102"/><circle cx="132" cy="102" r="6"/>
+            <line x1="132" y1="162" x2="150" y2="162"/><circle cx="132" cy="162" r="6"/>
+            <line x1="132" y1="186" x2="150" y2="186"/><circle cx="132" cy="186" r="6"/>
+            <line x1="132" y1="198" x2="150" y2="198"/><circle cx="132" cy="198" r="6"/>
+            <line x1="132" y1="210" x2="150" y2="210"/><circle cx="132" cy="210" r="6"/>
+            <line x1="132" y1="222" x2="150" y2="222"/><circle cx="132" cy="222" r="6"/>
+            <line x1="132" y1="246" x2="150" y2="246"/><circle cx="132" cy="246" r="6"/>
+            <line x1="132" y1="258" x2="150" y2="258"/><circle cx="132" cy="258" r="6"/>
+            <line x1="132" y1="270" x2="150" y2="270"/><circle cx="132" cy="270" r="6"/>
+            <line x1="132" y1="282" x2="150" y2="282"/><circle cx="132" cy="282" r="6"/>
+            <line x1="132" y1="306" x2="150" y2="306"/><circle cx="132" cy="306" r="6"/>
+            <line x1="132" y1="318" x2="150" y2="318"/><circle cx="132" cy="318" r="6"/>
+
+            <line x1="650" y1="90" x2="634" y2="90"/><circle cx="650" cy="90" r="6"/>
+            <line x1="650" y1="102" x2="634" y2="102"/><circle cx="650" cy="102" r="6"/>
+            <line x1="650" y1="126" x2="634" y2="126"/><circle cx="650" cy="126" r="6"/>
+            <line x1="650" y1="138" x2="634" y2="138"/><circle cx="650" cy="138" r="6"/>
+            <line x1="650" y1="150" x2="634" y2="150"/><circle cx="650" cy="150" r="6"/>
+            <line x1="650" y1="162" x2="634" y2="162"/><circle cx="650" cy="162" r="6"/>
+            <line x1="650" y1="186" x2="634" y2="186"/><circle cx="650" cy="186" r="6"/>
+            <line x1="650" y1="198" x2="634" y2="198"/><circle cx="650" cy="198" r="6"/>
+            <line x1="650" y1="210" x2="634" y2="210"/><circle cx="650" cy="210" r="6"/>
+            <line x1="650" y1="222" x2="634" y2="222"/><circle cx="650" cy="222" r="6"/>
+            <line x1="650" y1="246" x2="634" y2="246"/><circle cx="650" cy="246" r="6"/>
+            <line x1="650" y1="258" x2="634" y2="258"/><circle cx="650" cy="258" r="6"/>
+            <line x1="650" y1="270" x2="634" y2="270"/><circle cx="650" cy="270" r="6"/>
+            <line x1="650" y1="282" x2="634" y2="282"/><circle cx="650" cy="282" r="6"/>
+            <line x1="650" y1="306" x2="634" y2="306"/><circle cx="650" cy="306" r="6"/>
+            <line x1="650" y1="318" x2="634" y2="318"/><circle cx="650" cy="318" r="6"/>
+          </g>
+
+          <!-- DEBUG (SWCLK / GND / SWDIO) -->
+          <text x="262" y="422" text-anchor="end" fill="#7c8aa5" font-size="7">DEBUG</text>
+          <rect x="270" y="406" width="160" height="30" rx="6" fill="#0d1117" stroke="#2b3650"/>
+          <circle cx="300" cy="418" r="4" fill="#7c8aa5"/><circle cx="330" cy="418" r="4" fill="#7c8aa5"/><circle cx="360" cy="418" r="4" fill="#7c8aa5"/>
+          <text x="300" y="429" text-anchor="middle" fill="#56657f" font-size="6.5">SWCLK</text>
+          <text x="330" y="429" text-anchor="middle" fill="#56657f" font-size="6.5">GND</text>
+          <text x="360" y="429" text-anchor="middle" fill="#56657f" font-size="6.5">SWDIO</text>
+
+          <!-- legenda -->
+          <text x="413" y="454" text-anchor="middle" fill="#7c8aa5" font-size="7" data-i18n="wiring.legend">
+            T0 = physical action · T1_CLICK = click response · T1_MOTION = motion response · GND = common ground
+          </text>
+        </svg>
+
+        <ol class="pin-steps">
+          <li data-i18n-html="pin.step1"><b>T0</b> (physical action: switch / photodiode+comparator) &rarr; <code>GP2</code> = pin <b>4</b>&nbsp; <span class="sw t0">■</span></li>
+          <li data-i18n-html="pin.step2"><b>T1_CLICK</b> (CH32V307 click output) &rarr; <code>GP3</code> = pin <b>5</b>&nbsp; <span class="sw clk">■</span></li>
+          <li data-i18n-html="pin.step3"><b>T1_MOTION</b> (CH32V307 motion output) &rarr; <code>GP4</code> = pin <b>6</b>&nbsp; <span class="sw mot">■</span></li>
+          <li data-i18n-html="pin.step4"><b>GND</b> common between the boards &rarr; pin <b>3</b> (near GP2) or <b>8</b> (near GP3/GP4).</li>
+          <li data-i18n-html="pin.step5"><b>USB</b> &rarr; the Pico 2&rsquo;s own USB port (WebSerial/CDC).</li>
+          <li data-i18n-html="pin.step6"><b>LED GP25</b> (on-board): blinks every 500&nbsp;ms while the firmware is alive.</li>
+          <li class="warn-li" data-i18n-html="pin.step7">Signals are 3.3&nbsp;V &mdash; <b>do NOT apply 5&nbsp;V</b> to the pins.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===================== configuração ===================== -->
+    <section class="card">
+      <h2 data-i18n="cfg.title">Measurement configuration</h2>
+      <div class="grid">
+        <label><span data-i18n="cfg.t0pull.label">T0 pull / physical</span>
+          <select id="cfg-t0pull">
+            <option value="f" selected data-i18n="cfg.t0pull.f">float (no pull)</option>
+            <option value="up" data-i18n="cfg.t0pull.up">pull-up (action drives T0 low)</option>
+            <option value="down" data-i18n="cfg.t0pull.down">pull-down (action drives T0 high)</option>
+          </select>
+        </label>
+        <label><span data-i18n="cfg.edge.label">T0 edge ("action")</span>
+          <select id="cfg-edge">
+            <option value="r" selected data-i18n="cfg.edge.r">rising</option>
+            <option value="f" data-i18n="cfg.edge.f">falling</option>
+          </select>
+        </label>
+        <label><span data-i18n="cfg.mode.label">Axis under test</span>
+          <select id="cfg-mode">
+            <option value="c" selected data-i18n="cfg.mode.c">Click (T1_CLICK)</option>
+            <option value="m" data-i18n="cfg.mode.m">Motion (T1_MOTION)</option>
+          </select>
+        </label>
+        <label><span data-i18n="cfg.holdoff.label">Holdoff (µs)</span>
+          <input id="cfg-holdoff" type="number" min="0" max="1000000" step="100" value="2000" />
+        </label>
+        <label><span data-i18n="cfg.timeout.label">Timeout / watchdog (µs)</span>
+          <input id="cfg-timeout" type="number" min="100" max="50000000" step="1000" value="100000" />
+        </label>
+      </div>
+      <div class="row">
+        <button id="btn-apply" disabled data-i18n="cfg.apply">Apply config</button>
+        <button id="btn-start" disabled>▶ START</button>
+        <button id="btn-stop" disabled>■ STOP</button>
+        <button id="btn-stat" disabled>STAT</button>
+        <button id="btn-reset" disabled>RESET</button>
+      </div>
+      <div id="cfg-note" class="note" data-i18n="cfg.noteDefault">Free combinations: any T0 pull × edge × axis.
+        A warning will appear here when the combination is unusual.</div>
+    </section>
+
+    <!-- ===================== estatísticas ===================== -->
+    <section class="card">
+      <h2><span data-i18n="stats.title">Statistics</span> <span class="live" id="live-dot"></span></h2>
+      <div class="stat-grid">
+        <div class="stat"><span class="k" data-i18n="stat.last">last latency</span><span class="v" id="st-last">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.avg">average (active)</span><span class="v" id="st-avg">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.minmax">min / max</span><span class="v" id="st-minmax">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.std">std deviation</span><span class="v" id="st-std">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.count">samples (active)</span><span class="v" id="st-count">0</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.elapsed">elapsed time</span><span class="v" id="st-elapsed">0 s</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.seq">total sequence</span><span class="v" id="st-seq">0</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.timouts">timeouts / drops</span><span class="v" id="st-timouts">0 / 0</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== gráfico ===================== -->
+    <section class="card">
+      <h2 data-i18n="chart.title">Latency profile (active mode)</h2>
+      <canvas id="chart-main" width="920" height="320"></canvas>
+      <div class="chart-help" data-i18n="chart.help">scatter: sequence × latencies · line = moving average (64)</div>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="hist.title">Histogram (last 256)</h2>
+      <canvas id="chart-hist" width="920" height="180"></canvas>
+    </section>
+
+    <!-- ===================== log e export ===================== -->
+    <section class="card">
+      <h2 data-i18n="exp.title">Events &amp; export</h2>
+      <div class="row">
+        <button id="btn-export-csv" disabled data-i18n="exp.csv">Export CSV (active)</button>
+        <button id="btn-export-json" disabled data-i18n="exp.json">Export JSON (all)</button>
+        <button id="btn-clear" disabled data-i18n="exp.clear">Clear data</button>
+      </div>
+      <ul id="event-log" class="log"></ul>
+    </section>
+  </main>
+
+  <footer><span data-i18n="footer">Side project: medidor-rp2350 — firmware + static page.</span></footer>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

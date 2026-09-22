@@ -1,0 +1,19 @@
+# CH32V307 / Pico SDK build artifacts
+firmware-ch32v307/build/
+firmware-rp2350/build/
+
+*.o
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+
+# PickyPico/RP CFG
+*.uf2
+
+# OS/editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
