@@ -1,0 +1,56 @@
+; edge_ts.pio — timestamp de borda por SM, contador decrescente livre em X.
+;
+; Cada SM roda um laço de 2 ciclos por contagem:
+;     ciclo 0: jmp pin   (amostra o pino)
+;     ciclo 1: jmp x--   (conta)
+; => 1 contagem = 2 ciclos de PIO (13,33 ns a 150 MHz).
+;
+; Ao detectar a borda configurada, o handler empurra X para o RX FIFO (push noblock)
+; e gasta exatamente 6 ciclos com 3 decrementos, entao o contador NAO deriva.
+; Assim, as 3 SMs iniciadas em sincronia (pio_enable_sm_mask_in_sync) compartilham
+; a mesma base de tempo, e latencia = (X_t0 - X_t1) mod 2^32 contagens.
+;
+; Quando X passa por 0 (a cada ~57 s a 150 MHz) o fall-through custa 1 ciclo extra:
+; erro de 1 ciclo (6,67 ns) por volta, desprezivel.
+
+.program edge_rise           ; empurra timestamp na borda de SUBIDA
+public lo:
+    jmp pin, hit             ; pino alto -> subida detectada
+    jmp x--, lo
+    jmp lo                   ; X deu a volta (raro)
+hit:
+    in x, 32                 ; ISR = X (timestamp)
+    push noblock
+    jmp x--, r1              ; 3 decrementos p/ compensar os 6 ciclos do handler
+r1:
+    jmp x--, r2
+r2:
+    jmp x--, hi
+public hi:
+    jmp pin, hi_dec          ; alto: continua contando
+    jmp x--, lo              ; desceu: volta a esperar subida
+hi_dec:
+    jmp x--, hi
+    jmp hi
+
+
+.program edge_fall           ; empurra timestamp na borda de DESCIDA
+public hi:
+    jmp pin, hi_dec          ; alto: continua contando
+    in x, 32                 ; caiu -> descida detectada
+    push noblock
+    jmp x--, f1
+f1:
+    jmp x--, f2
+f2:
+    jmp x--, lo
+    jmp lo
+hi_dec:
+    jmp x--, hi
+    jmp hi
+public lo:
+    jmp pin, lo_go
+    jmp x--, lo
+    jmp lo
+lo_go:
+    jmp x--, hi              ; subiu (sem evento): segue para o estado alto

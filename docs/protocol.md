@@ -15,7 +15,7 @@
 - **T1_CLICK / T1_MOTION** — saídas do circuito "tradutor" (ex: firmware
   CH32V307 que emite pulso/level a partir do relatório HID).
 - O **RP2350** timestamps as bordas de **T0, T1_CLICK, T1_MOTION** via 3 SMs
-  PIO (captura de borda; nunca GPIO IRQ — ver `pio/timestamp.pio`) e calcula
+  PIO (captura de borda; nunca GPIO IRQ — ver `edge_ts.pio`) e calcula
   a latência **T1 − T0**.
 
 ## Timebase (precisão)
@@ -42,7 +42,7 @@ lat_ns        = lat_ciclos × 1e9 / f_clk
 > ⚠️ Pulso de motion do sensor é estimado em **~10 ns**. Muito perto do
 > limiar de ~26 ns a 150 MHz. **Antes de confiar em números**, alimente o
 > T1_MOTION com um gerador de pulso de referência no osciloscópio e ajuste
-> `SYSTEM_CLOCK_KHZ` (200–250 MHz) se precisar. A alteração é só `config.h`.
+> o clock do sistema (200–250 MHz) se precisar.
 
 ## Protocolo serial (CDC 115200-8N1, Teensy-style binary + texto)
 
@@ -134,4 +134,4 @@ T0DET ─▶ novo T0 ─▶ DROPPED (mantém T0 recente)
 | GP4       | T1_MOTION (saída do tradutor) |
 | USB       | CDC (config/dados)            |
 
-Alterações de pino/especificações em `src/config.h`.
+Alterações de pino/especificações nos `#define` de `main.c`.

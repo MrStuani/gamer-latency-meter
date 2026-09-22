@@ -89,8 +89,7 @@ HID polling runs at **8&nbsp;kHz** (`bInterval=1` over microframes).
 
 ### RP2350 meter (`firmware-rp2350/`)
 
-Standard Pico SDK (C11, `PICO_BOARD=pico2`, `PICO_PLATFORM=rp2350-arm-s`). Build
-with the SDK, or `idf.py`-style:
+Standard Pico SDK (C11, `PICO_BOARD=pico2`). Build with the SDK:
 
 ```bash
 cmake -B build -DPICO_BOARD=pico2 -DPICO_PLATFORM=rp2350-arm-s -DPICO_SDK_PATH=/path/to/pico-sdk
