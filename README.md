@@ -11,6 +11,10 @@ edges with PIO state machines; a zero-dependency WebSerial web app
 
 > 🌐 **Live app** — https://mrstuani.github.io/gamer-latency-meter/
 > (WebSerial needs HTTPS — GitHub Pages already provides it.)
+>
+> 📦 **Prebuilt firmware** — [Releases](https://github.com/MrStuani/gamer-latency-meter/releases):
+> `pico2-medidor-latency-rp2350.uf2` (Pico 2, drag & drop) and
+> `ch32v307-usbhid-translator.hex`/`.bin` (flash with WCH-LinkE).
 
 ---
 
