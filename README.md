@@ -9,9 +9,8 @@ reports into clean GPIO edges; a Raspberry Pi Pico 2 (RP2350) timestamps those
 edges with PIO state machines; a zero-dependency WebSerial web app
 (**10 languages**) drives and plots everything over USB CDC.
 
-> 🌐 **Live app** — `https://<your-username>.github.io/gamer-latency-meter/`
-> (WebSerial needs HTTPS — GitHub Pages already provides it. Update this link
-> in `README.md` to your own URL.)
+> 🌐 **Live app** — https://mrstuani.github.io/gamer-latency-meter/
+> (WebSerial needs HTTPS — GitHub Pages already provides it.)
 
 ---
 
