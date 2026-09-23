@@ -73,12 +73,12 @@ bench*. This rig closes the loop:
 ## Wiring (Pico 2)
 
 <p align="center">
-  <img src="https://i.imgur.com/8KiXe5A.jpeg" alt="Perfboard build: Pico 2 and CH32V307 connected with jumper wires" width="600">
+  <img src="https://i.imgur.com/8KiXe5A.jpeg" alt="Perfboard build: Pico 2 and CH32V305 connected with jumper wires" width="600">
   <br>
   <sub>Perfboard build: Pico 2 (red) and CH32V307 (black)</sub>
 </p>
 <p align="center">
-  <img src="https://i.imgur.com/8Y5WN7X.png" alt="Wiring diagram: CH32V307 translator to Pico 2 meter" width="800">
+  <img src="https://i.imgur.com/8Y5WN7X.png" alt="Wiring diagram: CH32V305 translator to Pico 2 meter" width="800">
 </p>
 | Pico 2 pin | Signal | Connects to |
 |---|---|---|
