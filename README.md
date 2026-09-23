@@ -77,7 +77,9 @@ bench*. This rig closes the loop:
   <br>
   <sub>Perfboard build: Pico 2 (red) and CH32V307 (black)</sub>
 </p>
-
+<p align="center">
+  <img src="https://i.imgur.com/8Y5WN7X.png" alt="Wiring diagram: CH32V307 translator to Pico 2 meter" width="800">
+</p>
 | Pico 2 pin | Signal | Connects to |
 |---|---|---|
 | `GP2` (pin 4) | `T0` — physical action (switch / photodiode+comparator) | your ground truth |
