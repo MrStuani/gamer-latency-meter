@@ -88,8 +88,20 @@ RISC-V GCC toolchain (path set in `Makefile` / `build.ps1`):
 ```
 
 Outputs `ch32v307-usbhid-latency.hex` / `.bin`. Flash with the WCH-LinkE.
-`PA0` = click, `PA1` = motion pulse (~10&nbsp;µs, 100% hardware via TIM2).
+`PA0` = click, `PA1` = motion pulse (100% hardware via TIM2, 1 µs timer
+prescaler with the compare preload rising ~10&nbsp;µs after the ISR write).
 HID polling runs at **8&nbsp;kHz** (`bInterval=1` over microframes).
+
+### Measured latency & the ~10&nbsp;µs offset
+
+The motion (T1_MOTION) rising edge fires ~10&nbsp;µs **after** the firmware
+actually sees movement: the ISR writes the timer compare and the output rises
+10 timer ticks later, with an additional one-poll-period quantization
+(≤ ~125&nbsp;µs at 8&nbsp;kHz). This ~10&nbsp;µs is **not** a bug in the
+firmware, it is the systematic latency of the motion pulse by design. When
+interpreting scope/the app results, subtract ~10&nbsp;µs (and account for the
+±125&nbsp;µs quantization, mean ~62&nbsp;µs) — an oscilloscope measurement of
+"click to pulse" should match what the web app reports within one poll period.
 
 ### RP2350 meter (`firmware-rp2350/`)
 

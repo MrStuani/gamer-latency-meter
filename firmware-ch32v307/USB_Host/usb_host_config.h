@@ -131,6 +131,24 @@ typedef struct __HOST_CTL
         uint8_t  ModOffset;    /* byte index of keyboard modifiers       */
         uint8_t  KeyOffset;    /* byte index of keyboard key codes       */
 
+        /* Automatic layout, extracted from the HID Report Descriptor (see
+         * hid_report_parser). When LayoutAuto is 1 the ISR reads X/Y/buttons
+         * through the *Bit* fields below; otherwise it uses the byte offsets
+         * above (boot/report fallback). Domains of {X,Y,Btn}BitOff are 0..511
+         * bit for a 64-byte report. */
+        uint16_t ReportDescLen;  /* wDescriptorLength of the HID descriptor */
+        uint8_t  LayoutAuto;     /* 1 = use the *Bit* fields below         */
+        uint8_t  BtnValid;       /* 1 = a button block was found           */
+        uint16_t BtnBitOff;      /* bit position of the first button       */
+        uint8_t  BtnBitSize;     /* bits per button                        */
+        uint8_t  BtnBitCount;    /* button mask width (bits read at once)  */
+        uint16_t XBitOff;
+        uint8_t  XBitSize;
+        uint8_t  XSigned;
+        uint16_t YBitOff;
+        uint8_t  YBitSize;
+        uint8_t  YSigned;
+
 
         uint8_t  OutEndpNum;
         uint8_t  OutEndpAddr[ 4 ];

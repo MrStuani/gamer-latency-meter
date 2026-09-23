@@ -49,7 +49,8 @@ SRC_PERIPH = \
 
 SRC_USB = \
 	USB_Host/ch32v30x_usbhs_host.c \
-	USB_Host/usb_host_hid.c
+	USB_Host/usb_host_hid.c \
+	USB_Host/hid_report_parser.c
 
 SRC_APP = \
 	src/main.c \

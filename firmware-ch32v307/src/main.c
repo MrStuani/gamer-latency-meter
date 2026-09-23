@@ -9,6 +9,7 @@
  */
 
 #include "usb_host_config.h"
+#include "hid_report_parser.h"
 #include "ch32v30x_usbfs_device.h"
 
 /******************************************************************************/
@@ -30,7 +31,12 @@ uint8_t          Com_Buf[ DEF_COM_BUF_LEN ];
 
 volatile uint8_t g_button_state = 0;
 
-__attribute__((aligned(4))) static uint8_t s_hid_buf[BOOT_KEYB_LEN];
+/* Generic HID reports can be bigger than the 8-byte boot format (Report ID +
+   buttons + wheel + X/Y/z + vendors), so the polling buffer is 64 bytes. The
+   keyboard scan loop stays bounded by BOOT_KEYB_LEN. */
+#define HID_REPORT_BUF_LEN  64
+
+__attribute__((aligned(4))) static uint8_t s_hid_buf[HID_REPORT_BUF_LEN];
 static uint8_t s_ep_toggle = 0;
 
 /* Setup requests: SetupGetDevDesc, SetupGetCfgDesc, SetupSetAddr, SetupSetConfig
@@ -60,14 +66,11 @@ static void GPIO_Init_All(void)
 /******************************************************************************/
 /* TIM2 PWM One-Shot — Motion pulse 100% hardware
  *
- * Design (edge-exact): PWM Mode 2, polaridade HIGH, CCR = 0, prescaler = 0.
- *   - O update/reinit coloca o OCxREF em inativo  -> PA1 LOW  (idle)
- *   - CCR=0 faz o LO match (CNT==CCR==0) na primeira
- *     borda do contador, ~1 tick (≈10 ns a 96 MHz) -> PA1 HIGH (borda de subida
- *     NO instante do disparo, e não pulse_us depois como na versão PWM1+LOW)
- *   - Fica HIGH até o overflow em ARR (largura = ARR+1 ticks) e então o
- *     one-pulse desliga o timer com a saída de volta em LOW.
- * A largura passa a ser controlada pelo PERÍODO (ARR), não pelo CCR. */
+ * The rising edge of the motion pulse happens ~10 µs AFTER the moment the ISR
+ * detects motion: the channel starts LOW (PWM1 with OCPolarity_Low) and the
+ * CH2CCxR preload is kept at 10, so the comparator only turns the output HIGH
+ * after ~10 timer ticks (1 µs prescaler). This ~10 µs is a systematic offset
+ * of the measurement and is documented as such in the README. */
 static void TIM2_Motion_Init(uint16_t pulse_us)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure = {0};
@@ -75,16 +78,18 @@ static void TIM2_Motion_Init(uint16_t pulse_us)
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
-    TIM_TimeBaseStructure.TIM_Period = (pulse_us * (SystemCoreClock / 1000000)) - 1;
-    TIM_TimeBaseStructure.TIM_Prescaler = 0;
+    /* Period must be > pulse so PWM1 comparator turns the output LOW and the
+       one-shot finishes in the LOW (idle) state instead of hanging HIGH. */
+    TIM_TimeBaseStructure.TIM_Period = (pulse_us * 2) - 1;
+    TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / 1000000) - 1;
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
 
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_Pulse = 0;
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+    TIM_OCInitStructure.TIM_Pulse = pulse_us;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
     TIM_OC2Init(TIM2, &TIM_OCInitStructure);
 
     TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
@@ -145,14 +150,42 @@ void TIM3_IRQHandler(void)
     {
         if (Ctl.Interface[0].Type == DEC_MOUSE)
         {
-            uint8_t btnMask = (Ctl.Interface[0].BtnBits >= 8)
-                              ? 0xFF : (uint8_t)((1u << Ctl.Interface[0].BtnBits) - 1);
-            uint8_t buttons = (Ctl.Interface[0].BtnOffset < len)
-                              ? (s_hid_buf[Ctl.Interface[0].BtnOffset] & btnMask) : 0;
-            int8_t dx = (Ctl.Interface[0].XOffset == 0xFF || Ctl.Interface[0].XOffset >= len)
-                        ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].XOffset];
-            int8_t dy = (Ctl.Interface[0].YOffset == 0xFF || Ctl.Interface[0].YOffset >= len)
-                        ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].YOffset];
+            int32_t buttons;
+            int32_t dx, dy;
+
+            if (Ctl.Interface[0].LayoutAuto)
+            {
+                /* Automatic layout (HID Report Descriptor): offsets are in
+                   BITS. Guard by comparing against the bytes actually
+                   received (len * 8). Buttons read as one count-bit mask. */
+                buttons = (Ctl.Interface[0].BtnValid &&
+                           ((uint32_t)Ctl.Interface[0].BtnBitOff + Ctl.Interface[0].BtnBitCount)
+                               <= ((uint32_t)len * 8u))
+                          ? (hid_bits(s_hid_buf, Ctl.Interface[0].BtnBitOff,
+                                      Ctl.Interface[0].BtnBitCount, 0) != 0)
+                          : 0;
+                dx = ((uint32_t)Ctl.Interface[0].XBitOff + Ctl.Interface[0].XBitSize)
+                           <= ((uint32_t)len * 8u)
+                     ? hid_bits(s_hid_buf, Ctl.Interface[0].XBitOff,
+                                Ctl.Interface[0].XBitSize, Ctl.Interface[0].XSigned)
+                     : 0;
+                dy = ((uint32_t)Ctl.Interface[0].YBitOff + Ctl.Interface[0].YBitSize)
+                           <= ((uint32_t)len * 8u)
+                     ? hid_bits(s_hid_buf, Ctl.Interface[0].YBitOff,
+                                Ctl.Interface[0].YBitSize, Ctl.Interface[0].YSigned)
+                     : 0;
+            }
+            else
+            {
+                uint8_t btnMask = (Ctl.Interface[0].BtnBits >= 8)
+                                  ? 0xFF : (uint8_t)((1u << Ctl.Interface[0].BtnBits) - 1);
+                buttons = (Ctl.Interface[0].BtnOffset < len)
+                          ? (s_hid_buf[Ctl.Interface[0].BtnOffset] & btnMask) : 0;
+                dx = (Ctl.Interface[0].XOffset == 0xFF || Ctl.Interface[0].XOffset >= len)
+                     ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].XOffset];
+                dy = (Ctl.Interface[0].YOffset == 0xFF || Ctl.Interface[0].YOffset >= len)
+                     ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].YOffset];
+            }
 
             if (buttons)
             {
@@ -169,9 +202,10 @@ void TIM3_IRQHandler(void)
 
             if (dx != 0 || dy != 0)
             {
-                /* UG reinicia o contador e forca OCxREF inativo (PA1 LOW);
-                   o match CNT==CCR==0 sobe a saida na 1a borda (~10ns).
-                   A largura ja esta fixada no ARR configurado em init. */
+                /* CH2CCxR preload = 10 ticks (1 µs prescaler): the motion pulse
+                   only rises ~10 µs after this write — systematic measurement
+                   offset, documented in the README. */
+                TIM2->CH2CVR = 10;
                 TIM2->CNT = 0;
                 TIM2->SWEVGR |= TIM_UG;
                 TIM2->CTLR1 |= TIM_CEN;
@@ -281,6 +315,21 @@ static uint8_t Find_HID_EP_In(uint8_t *buf, uint16_t len)
                     if (elen == 0 || j + elen > len) break;
                     if (etype == 0x04) break;
 
+                    if (etype == DEF_DECR_HID)
+                    {
+                        /* HID descriptor: bLength, bType, bcdHID(2), bCountry,
+                           bNumDescriptors, bClassDescType(0x22),
+                           wDescriptorLength(2) — bytes 7 and 8. */
+                        if (elen >= 9)
+                        {
+                            Ctl.Interface[0].ReportDescLen =
+                                (uint16_t)buf[j + 7] |
+                                ((uint16_t)buf[j + 8] << 8);
+                        }
+                        j += elen;
+                        continue;
+                    }
+
                     if (etype == 0x05)
                     {
                         PUSB_ENDP_DESCR ep = (PUSB_ENDP_DESCR)&buf[j];
@@ -373,6 +422,49 @@ RETRY:
     HID_SetIdle(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum, 0, 0);
 
     HID_SetReportLayout(boot);
+
+    /* Automatic layout from the HID Report Descriptor (mouse only). When the
+       parser recovers the X/Y/buttons bit positions, the ISR reads them through
+       the *Bit fields; otherwise the fixed boot layout set above is kept as
+       fallback. The keyboard always uses the boot layout. */
+    if (Ctl.Interface[0].Type == DEC_MOUSE)
+    {
+        static uint8_t rdesc_buf[256];
+        uint16_t want = (Ctl.Interface[0].ReportDescLen
+                         && Ctl.Interface[0].ReportDescLen <= 256)
+                        ? Ctl.Interface[0].ReportDescLen : 256;
+        hid_mouse_layout_t layout;
+
+        if (HID_GetReportDescr(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum,
+                               rdesc_buf, want, &len) == ERR_SUCCESS
+            && HID_ParseMouseLayout(rdesc_buf, len, &layout) == ERR_SUCCESS)
+        {
+            Ctl.Interface[0].LayoutAuto  = 1;
+            Ctl.Interface[0].BtnValid    = layout.btn.valid;
+            Ctl.Interface[0].BtnBitOff   = layout.btn.bit_off;
+            Ctl.Interface[0].BtnBitSize  = layout.btn.bit_size;
+            Ctl.Interface[0].BtnBitCount = layout.btn.count;
+            Ctl.Interface[0].XBitOff     = layout.x.bit_off;
+            Ctl.Interface[0].XBitSize    = layout.x.bit_size;
+            Ctl.Interface[0].XSigned     = layout.x.is_signed;
+            Ctl.Interface[0].YBitOff     = layout.y.bit_off;
+            Ctl.Interface[0].YBitSize    = layout.y.bit_size;
+            Ctl.Interface[0].YSigned     = layout.y.is_signed;
+
+            printf("[hid] auto: report_id=%u btn{off=%u,count=%u} "
+                   "X{off=%u,size=%u,signed=%u} Y{off=%u,size=%u,signed=%u}\r\n",
+                   layout.report_id,
+                   layout.btn.bit_off, layout.btn.count,
+                   layout.x.bit_off, layout.x.bit_size, layout.x.is_signed,
+                   layout.y.bit_off, layout.y.bit_size, layout.y.is_signed);
+        }
+        else
+        {
+            printf("[hid] warn: descriptor parse failed, "
+                   "using fixed boot layout (rdesc_len=%u)\r\n",
+                   (unsigned)Ctl.Interface[0].ReportDescLen);
+        }
+    }
 
     Dev.bStatus = ROOT_DEV_SUCCESS;
     return ERR_SUCCESS;

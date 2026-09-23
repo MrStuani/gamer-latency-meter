@@ -56,6 +56,7 @@ $C_SOURCES = @(
     "EVT_Support\Peripheral\src\ch32v30x_misc.c",
     "USB_Host\ch32v30x_usbhs_host.c",
     "USB_Host\usb_host_hid.c",
+    "USB_Host\hid_report_parser.c",
     "USB_Device\ch32v30x_usbfs_device.c",
     "USB_Device\usb_desc.c",
     "src\main.c",
