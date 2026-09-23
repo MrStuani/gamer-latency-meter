@@ -16,6 +16,12 @@ edges with PIO state machines; a zero-dependency WebSerial web app
 > `pico2-medidor-latency-rp2350.uf2` (Pico 2, drag & drop) and
 > `ch32v307-usbhid-translator.hex`/`.bin` (flash with WCH-LinkE).
 
+<p align="center">
+  <img src="https://i.imgur.com/9iGAsh1.jpeg" alt="Full setup: CH32V307 + Pico 2 measuring the latency of a gaming mouse" width="700">
+  <br>
+  <sub>Measurement rig: CH32V307 (translator) + Pico 2 (timestamper) + mouse under test</sub>
+</p>
+
 ---
 
 ## Why this exists
@@ -65,6 +71,12 @@ bench*. This rig closes the loop:
 > (HTTPS or `localhost`). Mobile browsers won't work. A warning is shown in-app otherwise.
 
 ## Wiring (Pico 2)
+
+<p align="center">
+  <img src="https://i.imgur.com/8KiXe5A.jpeg" alt="Perfboard build: Pico 2 and CH32V307 connected with jumper wires" width="600">
+  <br>
+  <sub>Perfboard build: Pico 2 (red) and CH32V307 (black)</sub>
+</p>
 
 | Pico 2 pin | Signal | Connects to |
 |---|---|---|
