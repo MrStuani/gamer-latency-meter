@@ -103,6 +103,28 @@ interpreting scope/the app results, subtract ~10&nbsp;µs (and account for the
 ±125&nbsp;µs quantization, mean ~62&nbsp;µs) — an oscilloscope measurement of
 "click to pulse" should match what the web app reports within one poll period.
 
+### HID decode behavior
+
+The translator mirrors what a PC actually receives, so latency measured on
+the scope matches what software on a desktop would see:
+
+- **Report format wins over Boot.** The peripheral's HID report descriptor is
+  read (with up to 4 retries) and bit-level button/X/Y offsets are decoded from
+  it. Mice are **never** switched to Boot protocol (`SET_PROTOCOL(Boot)`):
+  some devices "fake-ACK" it and degrade to a garbage boot stream the host
+  cannot recover. A few devices with a failing descriptor read fall back to an
+  empirical report layout and the Report ID is then confirmed live from the
+  frames (`byte0` constant across frames).
+- **Primary report only.** Auxiliary reports (wheel/vendor, different Report ID)
+  are ignored so they cannot corrupt click/motion state — same intent as a PC
+  merging them, but only the meaningful report drives the GPIO.
+- **Click arming.** The CLICK line only goes active after the first clean
+  "buttons=0" frame, so a plug-in burst or a device that reports junk while the
+  host enumerates can never produce a spurious click.
+- **Plug-in window.** For the first ~50&nbsp;ms after enumeration, both click
+  and motion are suppressed during the device's own "settle/handshake" burst;
+  genuine movement reported by the device afterwards is passed through.
+
 ### RP2350 meter (`firmware-rp2350/`)
 
 Standard Pico SDK (C11, `PICO_BOARD=pico2`). Build with the SDK:

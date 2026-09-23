@@ -30,11 +30,52 @@ uint8_t          DevDesc_Buf[ 18 ];
 uint8_t          Com_Buf[ DEF_COM_BUF_LEN ];
 
 volatile uint8_t g_button_state = 0;
+volatile uint8_t g_click_armed = 0;
 
 /* Generic HID reports can be bigger than the 8-byte boot format (Report ID +
    buttons + wheel + X/Y/z + vendors), so the polling buffer is 64 bytes. The
    keyboard scan loop stays bounded by BOOT_KEYB_LEN. */
 #define HID_REPORT_BUF_LEN  64
+
+/* CDC telemetry (debug/diag build). Mirrors in text what the firmware decides
+   to do, so it can be validated over the serial link instead of on a scope. */
+#define HID_CDC_DIAG 0
+
+#if HID_CDC_DIAG
+volatile uint16_t g_diag_len;     /* last decoded report length         */
+volatile uint8_t  g_diag_id;      /* report byte 0 (Report ID / buttons) */
+volatile uint8_t  g_diag_buttons; /* last decoded button mask           */
+volatile int32_t  g_diag_dx;      /* last decoded X movement            */
+volatile int32_t  g_diag_dy;      /* last decoded Y movement            */
+volatile uint32_t g_diag_motion;  /* motion pulses since last print     */
+volatile uint8_t  g_diag_armed;   /* click arming state                 */
+volatile uint8_t  g_diag_dirty;   /* state changed since last print     */
+volatile uint32_t g_diag_ok;      /* successful IN transactions         */
+volatile uint32_t g_diag_nak;     /* NAK (idle) responses (0x2A)        */
+volatile uint32_t g_diag_err;     /* other failed transactions          */
+volatile uint8_t  g_diag_last_err;/* last non-success USB code          */
+volatile uint32_t g_diag_age;     /* polls w/o success (8 == ~1 ms)     */
+volatile uint16_t g_diag_burst;   /* frames left in plug-in burst       */
+uint8_t           g_diag_raw[ HID_REPORT_BUF_LEN ]; /* last raw report   */
+#endif
+
+/* Live report-format detection. Many mice ACK SET_PROTOCOL(Boot) but keep
+   sending Report-ID frames (byte0 = report id). When the descriptor parser
+   failed (LayoutAuto == 0) and the first frames show a constant nonzero
+   byte0 in 1..15 with no frame ever having byte0 == 0, the device is
+   report-format: switch to the empirical 1-byte layout and filter by the
+   detected id. Decided once per enumeration. */
+volatile uint8_t g_det_report_id = 0; /* 0 = undetected                */
+volatile uint8_t g_det_done    = 0;   /* decision made (switch or boot)*/
+volatile uint8_t g_det_saw_zero = 0;  /* saw byte0 == 0 (real buttons) */
+volatile uint8_t g_det_probe   = 0;   /* candidate report id           */
+volatile uint8_t g_det_n       = 0;   /* consecutive equal cands       */
+
+/* Motion suppression after enumeration (~50 ms): some mice emit a one-shot
+   "pilot" motion burst right after plugging in. Just like clicks (which are
+   already gated by g_click_armed), the motion output stays LOW until this
+   window elapses so plugging a mouse provokes nothing on the scope. */
+volatile uint16_t g_motion_suppress_ticks = 0; /* 400 ticks == 50 ms */
 
 __attribute__((aligned(4))) static uint8_t s_hid_buf[HID_REPORT_BUF_LEN];
 static uint8_t s_ep_toggle = 0;
@@ -140,6 +181,9 @@ void TIM3_IRQHandler(void)
         return;
     }
 
+    if (g_motion_suppress_ticks)
+        g_motion_suppress_ticks--;   /* time window since enumeration */
+
     uint16_t len;
     uint8_t s = USBHSH_GetEndpData(
         Ctl.Interface[0].InEndpAddr[0],
@@ -148,7 +192,73 @@ void TIM3_IRQHandler(void)
 
     if (s == ERR_SUCCESS)
     {
-        if (Ctl.Interface[0].Type == DEC_MOUSE)
+#if HID_CDC_DIAG
+        g_diag_age = 0;
+        g_diag_ok++;
+#endif
+
+        /* Only decode frames belonging to the expected Report ID (when the
+           device uses one). Auxiliary reports (wheel/vendor) keep the last
+           click/motion state instead of corrupting the offsets. */
+        uint8_t frame_ok = (Ctl.Interface[0].ReportID == 0)
+                           || (len >= 1 && s_hid_buf[0] == Ctl.Interface[0].ReportID);
+
+        /* Live detection when there is no parsed layout (boot fallback) */
+        if (frame_ok && len >= 1 && !Ctl.Interface[0].LayoutAuto && !g_det_done)
+        {
+            uint8_t b0 = s_hid_buf[0];
+
+            if (b0 == 0)
+            {
+                g_det_saw_zero = 1;    /* boot mouse idle/motion frame */
+                g_det_probe = 0;
+                g_det_n = 0;
+            }
+            else if (b0 <= 15)
+            {
+                if (g_det_probe == 0)        { g_det_probe = b0; g_det_n = 1; }
+                else if (b0 == g_det_probe)  { g_det_n++; }
+                else                         { g_det_saw_zero = 1; g_det_probe = 0; g_det_n = 0; }
+
+                if (g_det_n >= 4)
+                {
+                    g_det_done = 1;
+                    if (!g_det_saw_zero)
+                    {
+                        g_det_report_id = g_det_probe;
+
+                        if (Ctl.Interface[0].Type == DEC_MOUSE)
+                        {
+                            Ctl.Interface[0].BtnOffset = 1;
+                            Ctl.Interface[0].BtnBits   = 8;
+                            Ctl.Interface[0].XOffset   = 2;
+                            Ctl.Interface[0].YOffset   = 3;
+                        }
+                        else
+                        {
+                            Ctl.Interface[0].ModOffset = 1;
+                            Ctl.Interface[0].KeyOffset = 2;
+                        }
+                        Ctl.Interface[0].ReportID = g_det_report_id;
+                        printf("[hid] live: report_id=%u, empirical layout\r\n",
+                               g_det_report_id);
+#if HID_CDC_DIAG
+                        g_diag_dirty = 1;
+#endif
+                    }
+                    g_det_probe = 0;
+                    g_det_n = 0;
+                }
+            }
+            else
+            {
+                g_det_saw_zero = 1;
+                g_det_probe = 0;
+                g_det_n = 0;
+            }
+        }
+
+        if (frame_ok && Ctl.Interface[0].Type == DEC_MOUSE)
         {
             int32_t buttons;
             int32_t dx, dy;
@@ -187,31 +297,82 @@ void TIM3_IRQHandler(void)
                      ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].YOffset];
             }
 
-            if (buttons)
+#if HID_CDC_DIAG
+            static uint16_t l_len = 0xFFFF;
+            static uint8_t  l_id = 0xFF, l_btn = 0xFF;
+            static int32_t  l_dx = 0x7FFFFFFF, l_dy = 0x7FFFFFFF;
+
+            if (g_diag_burst)
             {
-                if (!g_button_state)
-                    GPIOA->BSHR = PIN_CLICK;
-                g_button_state = 1;
+                g_diag_burst--;
+                g_diag_dirty = 1;   /* log every frame during plug-in burst */
             }
-            else
+
+            g_diag_len     = len;
+            g_diag_id      = (len >= 1) ? s_hid_buf[0] : 0;
+            g_diag_buttons = (uint8_t)buttons;
+            g_diag_dx      = dx;
+            g_diag_dy      = dy;
+            if (l_len != g_diag_len || l_id != g_diag_id ||
+                l_btn != g_diag_buttons || l_dx != g_diag_dx || l_dy != g_diag_dy)
             {
-                if (g_button_state)
-                    GPIOA->BCR = PIN_CLICK;
+                memcpy(g_diag_raw, s_hid_buf,
+                       (len <= HID_REPORT_BUF_LEN) ? len : HID_REPORT_BUF_LEN);
+                g_diag_dirty = 1;
+                l_len = g_diag_len; l_id = g_diag_id; l_btn = g_diag_buttons;
+                l_dx = g_diag_dx;   l_dy = g_diag_dy;
+            }
+#endif
+
+            if (buttons == 0) g_click_armed = 1;
+            if (g_click_armed)
+            {
+                if (buttons)
+                {
+                    if (!g_button_state)
+                        GPIOA->BSHR = PIN_CLICK;
+                    g_button_state = 1;
+                }
+                else
+                {
+                    if (g_button_state)
+                        GPIOA->BCR = PIN_CLICK;
+                    g_button_state = 0;
+                }
+            }
+            else if (g_button_state)
+            {
+                GPIOA->BCR = PIN_CLICK;
                 g_button_state = 0;
             }
 
+#if HID_CDC_DIAG
+            if (g_diag_armed != g_click_armed)
+            {
+                g_diag_armed = g_click_armed;
+                g_diag_dirty = 1;
+            }
+#endif
+
             if (dx != 0 || dy != 0)
             {
-                /* CH2CCxR preload = 10 ticks (1 µs prescaler): the motion pulse
-                   only rises ~10 µs after this write — systematic measurement
-                   offset, documented in the README. */
-                TIM2->CH2CVR = 10;
-                TIM2->CNT = 0;
-                TIM2->SWEVGR |= TIM_UG;
-                TIM2->CTLR1 |= TIM_CEN;
+                if (g_motion_suppress_ticks == 0)
+                {
+#if HID_CDC_DIAG
+                    g_diag_motion++;
+                    g_diag_dirty = 1;
+#endif
+                    /* CH2CCxR preload = 10 ticks (1 µs prescaler): the motion pulse
+                       only rises ~10 µs after this write — systematic measurement
+                       offset, documented in the README. */
+                    TIM2->CH2CVR = 10;
+                    TIM2->CNT = 0;
+                    TIM2->SWEVGR |= TIM_UG;
+                    TIM2->CTLR1 |= TIM_CEN;
+                }
             }
         }
-        else if (Ctl.Interface[0].Type == DEC_KEY)
+        else if (frame_ok && Ctl.Interface[0].Type == DEC_KEY)
         {
             uint8_t modifiers = (Ctl.Interface[0].ModOffset < len)
                                 ? s_hid_buf[Ctl.Interface[0].ModOffset] : 0;
@@ -225,25 +386,48 @@ void TIM3_IRQHandler(void)
                 }
             }
 
-            if (any_key)
+            if (any_key == 0) g_click_armed = 1;
+            if (g_click_armed)
             {
-                if (!g_button_state)
-                    GPIOA->BSHR = PIN_CLICK;
-                g_button_state = 1;
+                if (any_key)
+                {
+                    if (!g_button_state)
+                        GPIOA->BSHR = PIN_CLICK;
+                    g_button_state = 1;
+                }
+                else
+                {
+                    if (g_button_state)
+                        GPIOA->BCR = PIN_CLICK;
+                    g_button_state = 0;
+                }
             }
-            else
+            else if (g_button_state)
             {
-                if (g_button_state)
-                    GPIOA->BCR = PIN_CLICK;
+                GPIOA->BCR = PIN_CLICK;
                 g_button_state = 0;
             }
         }
     }
-    else if (s == (USB_PID_STALL | ERR_USB_TRANSFER))
+    else
     {
-        USBHSH_ClearEndpStall(Dev.bEp0MaxPks,
-                              Ctl.Interface[0].InEndpAddr[0] | 0x80);
-        Ctl.Interface[0].InEndpTog[0] = 0;
+#if HID_CDC_DIAG
+        g_diag_age++;
+        if (s == (uint8_t)(USB_PID_NAK | ERR_USB_TRANSFER))
+            g_diag_nak++;
+        else
+        {
+            g_diag_err++;
+            g_diag_last_err = s;
+        }
+#endif
+
+        if (s == (USB_PID_STALL | ERR_USB_TRANSFER))
+        {
+            USBHSH_ClearEndpStall(Dev.bEp0MaxPks,
+                                  Ctl.Interface[0].InEndpAddr[0] | 0x80);
+            Ctl.Interface[0].InEndpTog[0] = 0;
+        }
     }
 
     GPIOA->BCR = PIN_DEBUG;
@@ -343,7 +527,11 @@ static uint8_t Find_HID_EP_In(uint8_t *buf, uint16_t len)
                             Ctl.Interface[0].InEndpInterval[0] =
                                 ep->bInterval;
                             Ctl.Interface[0].InEndpNum = 1;
-                            Ctl.InterfaceNum = 1;
+                            /* Ctl.InterfaceNum is set by Enumerate_Device only
+                               at the very end, so the 8 kHz ISR does not poll
+                               the IN endpoint while EP0 control transfers
+                               (SET_PROTOCOL/SET_IDLE/GET_DESCRIPTOR) are still
+                               in flight (they share the same host controller). */
                             return ERR_SUCCESS;
                         }
                     }
@@ -411,14 +599,26 @@ RETRY:
     s = Find_HID_EP_In(Com_Buf, len);
     if (s != ERR_SUCCESS) return s;
 
-    /* Force Boot Protocol so the report layout is the fixed one from the spec,
-       and idle rate 0 (the device reports immediately on change instead of
-       only every N ms). STALL/fail on SET_PROTOCOL => keep report protocol and
-       warn; SET_IDLE is optional, its result is ignored. */
-    uint8_t boot = (HID_SetProtocol(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum)
-                    == ERR_SUCCESS);
-    if (!boot)
-        printf("[hid] warn: SET_PROTOCOL(Boot) failed, using report layout\r\n");
+    /* Arm the pilot-jolt window as soon as the interface goes live: on a
+       re-enumeration the ISR is already polling while this function keeps
+       running, and the device's plug-in burst can arrive in this gap. */
+    g_motion_suppress_ticks = 400;   /* 50 ms of silent motion */
+
+    /* PC-like behaviour: do NOT force Boot protocol on mice whose report
+       descriptor we are going to parse. Every device tested acked
+       SET_PROTOCOL(Boot) but keeps sending Report-ID frames anyway (fake-boot),
+       and at least one mouse degrades to button-only reports while in Boot
+       mode — it works normally on a PC, which leaves mice in the native Report
+       protocol. The keyboard keeps the legacy Boot protocol. SET_IDLE(0) is
+       kept: the device reports immediately on change. */
+    uint8_t boot = 0;
+    if (Ctl.Interface[0].Type != DEC_MOUSE)
+    {
+        boot = (HID_SetProtocol(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum)
+                == ERR_SUCCESS);
+        if (!boot)
+            printf("[hid] warn: SET_PROTOCOL(Boot) failed, using report layout\r\n");
+    }
     HID_SetIdle(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum, 0, 0);
 
     HID_SetReportLayout(boot);
@@ -434,11 +634,28 @@ RETRY:
                          && Ctl.Interface[0].ReportDescLen <= 256)
                         ? Ctl.Interface[0].ReportDescLen : 256;
         hid_mouse_layout_t layout;
+        uint8_t rdesc_ok = 0;
 
-        if (HID_GetReportDescr(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum,
-                               rdesc_buf, want, &len) == ERR_SUCCESS
-            && HID_ParseMouseLayout(rdesc_buf, len, &layout) == ERR_SUCCESS)
+        /* The descriptor read on EP0 is transiently flaky (it failed even on
+           cold boots); retry a few times before falling back to the
+           empirical layout. */
+        for (uint8_t attempt = 0; attempt < 4 && !rdesc_ok; attempt++)
         {
+            if (HID_GetReportDescr(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum,
+                                   rdesc_buf, want, &len) == ERR_SUCCESS
+                && HID_ParseMouseLayout(rdesc_buf, len, &layout) == ERR_SUCCESS)
+            {
+                rdesc_ok = 1;
+            }
+            else
+            {
+                Delay_Ms(20);
+            }
+        }
+
+        if (rdesc_ok)
+        {
+            Ctl.Interface[0].ReportID    = layout.report_id;
             Ctl.Interface[0].LayoutAuto  = 1;
             Ctl.Interface[0].BtnValid    = layout.btn.valid;
             Ctl.Interface[0].BtnBitOff   = layout.btn.bit_off;
@@ -460,11 +677,28 @@ RETRY:
         }
         else
         {
+            /* No report descriptor recovered. The mouse stays in its native
+               Report protocol (like on a PC) — never force Boot here: some
+               devices really switch to a degraded/garbage boot mode that the
+               live format detection cannot undo (byte0 == 0). The empirical
+               report layout is kept and live detection refines the Report ID
+               from the actual frames. */
             printf("[hid] warn: descriptor parse failed, "
-                   "using fixed boot layout (rdesc_len=%u)\r\n",
+                   "using empirical report layout (rdesc_len=%u)\r\n",
                    (unsigned)Ctl.Interface[0].ReportDescLen);
+#if HID_CDC_DIAG
+            printf("[rdesc] ");
+            for (i = 0; i < len && i < 256; i++)
+                printf("%02X ", rdesc_buf[i]);
+            printf("\r\n");
+#endif
         }
     }
+
+    /* Interface goes live only now: the whole enumeration (EP0 control
+       transfers) has finished, so the 8 kHz ISR starts polling the IN
+       endpoint from a clean state on both first boot and re-enumeration. */
+    Ctl.InterfaceNum = 1;
 
     Dev.bStatus = ROOT_DEV_SUCCESS;
     return ERR_SUCCESS;
@@ -495,6 +729,16 @@ int main(void)
     uint8_t s = Enumerate_Device();
     if (s == ERR_SUCCESS)
     {
+        g_click_armed = 0;
+        GPIO_ResetBits(GPIOA, PIN_CLICK);
+#if HID_CDC_DIAG
+        g_diag_ok = 0; g_diag_nak = 0; g_diag_err = 0;
+        g_diag_last_err = 0; g_diag_age = 0;
+        g_diag_burst = 40; g_diag_dirty = 1;
+#endif
+        g_det_report_id = 0; g_det_done = 0;
+        g_det_saw_zero = 0; g_det_probe = 0; g_det_n = 0;
+        g_motion_suppress_ticks = 400;   /* 50 ms of silent motion */
         printf("OK: %s, EP IN=0x%x, interval=%d, speed=%s\r\n",
                Ctl.Interface[0].Type == DEC_MOUSE ? "Mouse" : "Keyboard",
                Ctl.Interface[0].InEndpAddr[0],
@@ -525,8 +769,15 @@ int main(void)
             Dev.bStatus = ROOT_DEV_DISCONNECT;
             memset(&Dev, 0, sizeof(Dev));
             memset(&Ctl, 0, sizeof(Ctl));
-            g_button_state = 0;
-            GPIO_ResetBits(GPIOA, PIN_CLICK);
+            g_det_report_id = 0; g_det_done = 0;
+            g_det_saw_zero = 0; g_det_probe = 0; g_det_n = 0;
+#if HID_CDC_DIAG
+            g_diag_burst = 0;
+            g_diag_dirty = 1;
+#endif
+g_button_state = 0;
+                g_click_armed = 0;
+                GPIO_ResetBits(GPIOA, PIN_CLICK);
 
             /* Stop motion timer and force its output LOW (idle) */
             TIM2->CTLR1 &= ~TIM_CEN;
@@ -542,6 +793,15 @@ int main(void)
             {
                 need_enum = 0;
                 Dev.bStatus = ROOT_DEV_SUCCESS;
+                g_click_armed = 0;
+                GPIO_ResetBits(GPIOA, PIN_CLICK);
+#if HID_CDC_DIAG
+                g_diag_ok = 0; g_diag_nak = 0; g_diag_err = 0;
+                g_diag_last_err = 0; g_diag_age = 0;
+                g_diag_burst = 40; g_diag_dirty = 1;
+#endif
+                g_det_report_id = 0; g_det_done = 0;
+                g_det_saw_zero = 0; g_det_probe = 0; g_det_n = 0;
                 printf("Reconnected: %s\r\n",
                        Ctl.Interface[0].Type == DEC_MOUSE ? "Mouse" : "KB");
             }
@@ -554,5 +814,59 @@ int main(void)
 
         Delay_Ms(10);
         CDC_Flush();
+
+#if HID_CDC_DIAG
+        static uint32_t diag_tick = 0;
+        static uint32_t diag_last_ms = 0xFFFFFFF0u;
+        static uint8_t  diag_idle_notified = 1;
+        uint8_t diag_print = 0;
+
+        if (g_diag_dirty)
+            diag_idle_notified = 0;
+
+        /* one line when the device goes quiet (> ~100 ms without data) */
+        if (!diag_idle_notified && (g_diag_age > 800))
+        {
+            diag_idle_notified = 1;
+            g_diag_dirty = 0;
+            printf("[hb] idle: ok=%lu nak=%lu err=%lu e=0x%02X "
+                   "age=%lums B=%u X=%ld Y=%ld\r\n",
+                   (unsigned long)g_diag_ok, (unsigned long)g_diag_nak,
+                   (unsigned long)g_diag_err, g_diag_last_err,
+                   (unsigned long)(g_diag_age / 8),
+                   g_diag_buttons, (long)g_diag_dx, (long)g_diag_dy);
+        }
+
+        if (g_diag_dirty)
+        {
+            uint32_t now = diag_tick;
+            uint32_t min_dt = (g_diag_burst > 0) ? 2u : 50u;  /* 20ms burst, 500ms else */
+            if ((now - diag_last_ms) >= min_dt)
+            {
+                diag_print = 1;
+                diag_last_ms = now;
+            }
+        }
+        diag_tick++;
+
+        if (diag_print)
+        {
+            uint32_t mot = g_diag_motion;
+            g_diag_motion = 0;
+            g_diag_dirty = 0;
+
+            printf("[diag] A=%u C=%u B=%u X=%ld Y=%ld M=%u l=%u id=%u\r\n",
+                   g_diag_armed, g_button_state, g_diag_buttons,
+                   (long)g_diag_dx, (long)g_diag_dy, (unsigned)mot,
+                   g_diag_len, g_diag_id);
+            printf("[raw] ");
+            {
+                uint8_t r;
+                for (r = 0; r < g_diag_len && r < HID_REPORT_BUF_LEN; r++)
+                    printf("%02X ", g_diag_raw[r]);
+            }
+            printf("\r\n");
+        }
+#endif
     }
 }
