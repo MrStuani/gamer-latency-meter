@@ -77,6 +77,10 @@ extern "C" {
 #define DEF_BUS_RESET_TIME          11
 #define DEF_RE_ATTACH_TIMEOUT       100
 #define DEF_WAIT_USB_TRANSFER_CNT   1000
+/* Pior caso aceitável de espera por uma transferência dentro da ISR de 8kHz
+   (125µs). Se o device não completar neste tempo, a ISR aborta o poll e volta
+   em vez de travar vários ciclos. */
+#define DEF_ISR_TRANSFER_WAIT_CNT   32
 #define DEF_CTRL_TRANS_TIMEOVER_CNT 200000/20
 
 /******************************************************************************/
@@ -107,6 +111,7 @@ typedef struct __HOST_CTL
     struct interface
     {
         uint8_t  Type;
+        uint8_t  IntfNum;      /* bInterfaceNumber (wIndex of class requests) */
         uint8_t  InEndpNum;
         uint8_t  InEndpAddr[ 4 ];
         uint8_t  InEndpType[ 4 ];

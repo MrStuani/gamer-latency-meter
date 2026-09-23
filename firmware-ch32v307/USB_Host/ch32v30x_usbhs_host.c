@@ -270,13 +270,22 @@ uint8_t USBHSH_Transact( uint8_t endp_pid, uint8_t endp_tog, uint32_t timeout )
     uint8_t   r, trans_retry;
     uint16_t  i;
 
+    /* timeout == 0 é o caminho do polling na ISR de 8kHz (150µs/ciclo):
+     * não podemos gastar os 1000 iterações de DEF_WAIT_USB_TRANSFER_CNT (até
+     * ~1ms) esperando um device que parou de responder nem ficar reenviando.
+     * Limita a espera e executa uma única tentativa; o próximo ciclo de 8kHz
+     * tenta de novo. O caminho de control transfer (timeout != 0) mantém o
+     * comportamento original (wait + retries + NAK retry). */
+    uint16_t wait_cnt  = ( timeout == 0 ) ? DEF_ISR_TRANSFER_WAIT_CNT : DEF_WAIT_USB_TRANSFER_CNT;
+    uint8_t  retry_max = ( timeout == 0 ) ? 1u : 10u;
+
     USBHSH->HOST_TX_CTRL = USBHSH->HOST_RX_CTRL = endp_tog;
     trans_retry = 0;
     do
     {
         USBHSH->HOST_EP_PID = endp_pid; // Specify token PID and endpoint number
         USBHSH->INT_FG = USBHS_UIF_TRANSFER; // Allow transfer 
-        for( i = DEF_WAIT_USB_TRANSFER_CNT; ( i != 0 ) && ( ( USBHSH->INT_FG & USBHS_UIF_TRANSFER ) == 0 ); i-- )
+        for( i = wait_cnt; ( i != 0 ) && ( ( USBHSH->INT_FG & USBHS_UIF_TRANSFER ) == 0 ); i-- )
         {
             Delay_Us( 1 ); // Delay for USB transfer                                                  
         }
@@ -363,7 +372,7 @@ uint8_t USBHSH_Transact( uint8_t endp_pid, uint8_t endp_tog, uint32_t timeout )
                 USBHSH->INT_FG = USBHS_UIF_DETECT;
             }
         }
-    }while( ++trans_retry < 10 );
+    }while( ++trans_retry < retry_max );
 
     return ERR_USB_TRANSFER;
 }

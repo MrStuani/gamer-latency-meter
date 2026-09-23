@@ -17,7 +17,8 @@
 #define PIN_MOTION      GPIO_Pin_1
 #define PIN_DEBUG       GPIO_Pin_2
 
-#define BOOT_MOUSE_LEN  3
+/* Boot-keyboard report is 8 bytes (modifier, reserved, 6 keycodes); it sizes
+   s_hid_buf and bounds the key scan loop. */
 #define BOOT_KEYB_LEN   8
 
 /******************************************************************************/
@@ -29,7 +30,7 @@ uint8_t          Com_Buf[ DEF_COM_BUF_LEN ];
 
 volatile uint8_t g_button_state = 0;
 
-__attribute__((aligned(4))) static uint8_t s_hid_buf[8];
+__attribute__((aligned(4))) static uint8_t s_hid_buf[BOOT_KEYB_LEN];
 static uint8_t s_ep_toggle = 0;
 
 /* Setup requests: SetupGetDevDesc, SetupGetCfgDesc, SetupSetAddr, SetupSetConfig
@@ -57,7 +58,16 @@ static void GPIO_Init_All(void)
 }
 
 /******************************************************************************/
-/* TIM2 PWM One-Shot — Motion pulse 100% hardware */
+/* TIM2 PWM One-Shot — Motion pulse 100% hardware
+ *
+ * Design (edge-exact): PWM Mode 2, polaridade HIGH, CCR = 0, prescaler = 0.
+ *   - O update/reinit coloca o OCxREF em inativo  -> PA1 LOW  (idle)
+ *   - CCR=0 faz o LO match (CNT==CCR==0) na primeira
+ *     borda do contador, ~1 tick (≈10 ns a 96 MHz) -> PA1 HIGH (borda de subida
+ *     NO instante do disparo, e não pulse_us depois como na versão PWM1+LOW)
+ *   - Fica HIGH até o overflow em ARR (largura = ARR+1 ticks) e então o
+ *     one-pulse desliga o timer com a saída de volta em LOW.
+ * A largura passa a ser controlada pelo PERÍODO (ARR), não pelo CCR. */
 static void TIM2_Motion_Init(uint16_t pulse_us)
 {
     TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure = {0};
@@ -65,18 +75,16 @@ static void TIM2_Motion_Init(uint16_t pulse_us)
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
-    /* Period must be > pulse so PWM1 comparator turns the output LOW and the
-       one-shot finishes in the LOW (idle) state instead of hanging HIGH. */
-    TIM_TimeBaseStructure.TIM_Period = (pulse_us * 2) - 1;
-    TIM_TimeBaseStructure.TIM_Prescaler = (SystemCoreClock / 1000000) - 1;
+    TIM_TimeBaseStructure.TIM_Period = (pulse_us * (SystemCoreClock / 1000000)) - 1;
+    TIM_TimeBaseStructure.TIM_Prescaler = 0;
     TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
     TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
 
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStructure.TIM_Pulse = pulse_us;
-    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+    TIM_OCInitStructure.TIM_Pulse = 0;
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
     TIM_OC2Init(TIM2, &TIM_OCInitStructure);
 
     TIM_SelectOnePulseMode(TIM2, TIM_OPMode_Single);
@@ -139,10 +147,11 @@ void TIM3_IRQHandler(void)
         {
             uint8_t btnMask = (Ctl.Interface[0].BtnBits >= 8)
                               ? 0xFF : (uint8_t)((1u << Ctl.Interface[0].BtnBits) - 1);
-            uint8_t buttons = s_hid_buf[Ctl.Interface[0].BtnOffset] & btnMask;
-            int8_t dx = (Ctl.Interface[0].XOffset == 0xFF)
+            uint8_t buttons = (Ctl.Interface[0].BtnOffset < len)
+                              ? (s_hid_buf[Ctl.Interface[0].BtnOffset] & btnMask) : 0;
+            int8_t dx = (Ctl.Interface[0].XOffset == 0xFF || Ctl.Interface[0].XOffset >= len)
                         ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].XOffset];
-            int8_t dy = (Ctl.Interface[0].YOffset == 0xFF)
+            int8_t dy = (Ctl.Interface[0].YOffset == 0xFF || Ctl.Interface[0].YOffset >= len)
                         ? 0 : (int8_t)s_hid_buf[Ctl.Interface[0].YOffset];
 
             if (buttons)
@@ -160,7 +169,9 @@ void TIM3_IRQHandler(void)
 
             if (dx != 0 || dy != 0)
             {
-                TIM2->CH2CVR = 10;
+                /* UG reinicia o contador e forca OCxREF inativo (PA1 LOW);
+                   o match CNT==CCR==0 sobe a saida na 1a borda (~10ns).
+                   A largura ja esta fixada no ARR configurado em init. */
                 TIM2->CNT = 0;
                 TIM2->SWEVGR |= TIM_UG;
                 TIM2->CTLR1 |= TIM_CEN;
@@ -168,14 +179,15 @@ void TIM3_IRQHandler(void)
         }
         else if (Ctl.Interface[0].Type == DEC_KEY)
         {
-            uint8_t modifiers = s_hid_buf[0];
+            uint8_t modifiers = (Ctl.Interface[0].ModOffset < len)
+                                ? s_hid_buf[Ctl.Interface[0].ModOffset] : 0;
             uint8_t any_key = (modifiers != 0);
 
             if (!any_key)
             {
-                for (uint8_t k = 2; k < 8; k++)
+                for (uint8_t k = Ctl.Interface[0].KeyOffset; k < BOOT_KEYB_LEN; k++)
                 {
-                    if (s_hid_buf[k] != 0) { any_key = 1; break; }
+                    if (k < len && s_hid_buf[k] != 0) { any_key = 1; break; }
                 }
             }
 
@@ -204,22 +216,37 @@ void TIM3_IRQHandler(void)
 }
 
 /******************************************************************************/
-/* HID report layout used by every mouse this firmware has seen:
- *   raw = 01 01 00 00 00 00 00 00  (click pressed)
- *   raw = 01 00 00 00 00 00 00 00  (click released)
- * i.e. byte0 = Report ID (always 0x01), byte1 = buttons, byte2 = X, byte3 = Y.
- * The motion byte travels with the report the same way on every mouse, so this
- * fixed layout is all the push-button part needs. */
-static void HID_SetReportLayout(void)
+/* HID report layout.
+ *
+ * boot_protocol == 1: SET_PROTOCOL(Boot) succeeded, so the report is the fixed
+ *   format from the HID 1.11 spec — mouse: [buttons, X, Y] (3 bytes, no Report
+ *   ID); keyboard: [modifier, reserved, key0..5] (8 bytes).
+ * boot_protocol == 0: DEV keeps its factory Report Protocol (SET_PROTOCOL not
+ *   supported). The layout is the empirically observed one: a 0x01 Report ID
+ *   byte in position 0, then buttons, X, Y. */
+static void HID_SetReportLayout(uint8_t boot_protocol)
 {
-    Ctl.Interface[0].ReportID  = 1;
-    Ctl.Interface[0].BtnOffset = 1;
-    Ctl.Interface[0].BtnBits   = 3;
-    Ctl.Interface[0].XOffset   = 2;
-    Ctl.Interface[0].YOffset   = 3;
     Ctl.Interface[0].ModOffset = 0;
     Ctl.Interface[0].KeyOffset = 2;
-    printf("[hid] layout: ReportID=1, btn@1, X@2, Y@3\r\n");
+
+    if (boot_protocol)
+    {
+        Ctl.Interface[0].ReportID  = 0;
+        Ctl.Interface[0].BtnOffset = 0;
+        Ctl.Interface[0].BtnBits   = 3;
+        Ctl.Interface[0].XOffset   = 1;
+        Ctl.Interface[0].YOffset   = 2;
+        printf("[hid] layout (boot): btn@0, X@1, Y@2\r\n");
+    }
+    else
+    {
+        Ctl.Interface[0].ReportID  = 1;
+        Ctl.Interface[0].BtnOffset = 1;
+        Ctl.Interface[0].BtnBits   = 3;
+        Ctl.Interface[0].XOffset   = 2;
+        Ctl.Interface[0].YOffset   = 3;
+        printf("[hid] layout (report): ReportID=1, btn@1, X@2, Y@3\r\n");
+    }
 }
 
 /******************************************************************************/
@@ -228,11 +255,11 @@ static uint8_t Find_HID_EP_In(uint8_t *buf, uint16_t len)
 {
     uint16_t i = 0;
 
-    while (i < len)
+    while (i + 1 < len)
     {
         uint8_t dlen  = buf[i];
         uint8_t dtype = buf[i + 1];
-        if (dlen == 0) break;
+        if (dlen == 0 || i + dlen > len) break;
 
         if (dtype == 0x04)
         {
@@ -244,13 +271,14 @@ static uint8_t Find_HID_EP_In(uint8_t *buf, uint16_t len)
             {
                 Ctl.Interface[0].Type =
                     (itf->bInterfaceProtocol == 1) ? DEC_KEY : DEC_MOUSE;
+                Ctl.Interface[0].IntfNum = itf->bInterfaceNumber;
 
                 uint16_t j = i + dlen;
-                while (j < len)
+                while (j + 1 < len)
                 {
                     uint8_t elen  = buf[j];
                     uint8_t etype = buf[j + 1];
-                    if (elen == 0) break;
+                    if (elen == 0 || j + elen > len) break;
                     if (etype == 0x04) break;
 
                     if (etype == 0x05)
@@ -334,9 +362,17 @@ RETRY:
     s = Find_HID_EP_In(Com_Buf, len);
     if (s != ERR_SUCCESS) return s;
 
-    /* Fixed universal HID layout (all mice observed report the same):
-     * byte0=Report ID(0x01), byte1=buttons, byte2=X, byte3=Y. */
-    HID_SetReportLayout();
+    /* Force Boot Protocol so the report layout is the fixed one from the spec,
+       and idle rate 0 (the device reports immediately on change instead of
+       only every N ms). STALL/fail on SET_PROTOCOL => keep report protocol and
+       warn; SET_IDLE is optional, its result is ignored. */
+    uint8_t boot = (HID_SetProtocol(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum)
+                    == ERR_SUCCESS);
+    if (!boot)
+        printf("[hid] warn: SET_PROTOCOL(Boot) failed, using report layout\r\n");
+    HID_SetIdle(Dev.bEp0MaxPks, Ctl.Interface[0].IntfNum, 0, 0);
+
+    HID_SetReportLayout(boot);
 
     Dev.bStatus = ROOT_DEV_SUCCESS;
     return ERR_SUCCESS;
