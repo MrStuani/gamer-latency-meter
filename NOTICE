@@ -1,0 +1,42 @@
+# NOTICE
+
+## Gamer Peripheral Latency Meter — first-party code
+
+Copyright (c) 2026 MrStuani. Licensed under the [MIT License](LICENSE).
+
+This covers the web app (`index.html`, `app.js`, `i18n.js`, `style.css`,
+`report.js`), the RP2350 meter firmware (`firmware-rp2350/`), the tests
+(`tests/`) and the documentation (`docs/`).
+
+## Third-party files: WCH CH32V307 EVT package
+
+The following paths are **not** covered by this project's MIT license:
+
+    firmware-ch32v307/EVT_Support/
+    firmware-ch32v307/USB_Host/
+    firmware-ch32v307/USB_Device/
+
+They belong to **Nanjing WCH Microelectronics Co., Ltd** (WCH) and are
+redistributed here **unmodified**, straight from the official evaluation-kit
+archive published by WCH, so that `firmware-ch32v307/` builds without an extra
+download step.
+
+- Upstream project: <https://github.com/openwch/ch32v307>
+- Official package: `CH32V307EVT.ZIP` (CH32V307 evaluation board description and
+  reference application routines), linked from
+  <https://www.wch-ic.com/products/CH32V307.html>
+- Local copy: `firmware-ch32v307/EVT_Support/README.md`
+
+**These files ship without a license.** The upstream `openwch/ch32v307`
+repository has no `LICENSE` file, and the EVT archive distributed by WCH does
+not state redistribution terms either. Redistribution rights for them are
+therefore unverified. This notice exists to make that explicit rather than
+imply a grant that nobody has verified.
+
+If you need a legally clean tree, delete those three directories and drop in
+your own copy from the official WCH download. The build only really needs
+`EVT_Support/{Core,Debug,Peripheral/inc,Ld}` and `USB_Host/` — see
+`firmware-ch32v307/EVT_Support/README.md` for the exact include paths.
+
+Issues asking WCH to state the terms are welcome:
+<https://github.com/openwch/ch32v307/issues>
