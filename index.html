@@ -16,10 +16,13 @@
           <span id="conn-hint" data-i18n="header.hint">brute-offline: open via file:// or GitHub Pages</span>
         </p>
       </div>
-      <label class="lang-switch">
-        <span data-i18n="lang.label">Language</span>
-        <select id="lang-sel" aria-label="Language"></select>
-      </label>
+      <div class="head-tools">
+        <button id="btn-theme" data-i18n-attr="aria-label:theme.toggle;title:theme.toggle">&#9728;&#65039;</button>
+        <label class="lang-switch">
+          <span data-i18n="lang.label">Language</span>
+          <select id="lang-sel" aria-label="Language"></select>
+        </label>
+      </div>
     </div>
   </header>
 
@@ -187,6 +190,14 @@
     <section class="card">
       <h2 data-i18n="cfg.title">Measurement configuration</h2>
       <div class="grid">
+        <label><span data-i18n="cfg.preset.label">Preset</span>
+          <select id="cfg-preset">
+            <option value="" selected data-i18n="cfg.preset.custom">Custom (manual)</option>
+            <option value="fita" data-i18n="cfg.preset.fita">Fita condutiva</option>
+            <option value="optical" data-i18n="cfg.preset.optical">Optical switch</option>
+            <option value="gx" data-i18n="cfg.preset.gx">GX click</option>
+          </select>
+        </label>
         <label><span data-i18n="cfg.t0pull.label">T0 pull / physical</span>
           <select id="cfg-t0pull">
             <option value="f" selected data-i18n="cfg.t0pull.f">float (no pull)</option>
@@ -206,8 +217,8 @@
             <option value="m" data-i18n="cfg.mode.m">Motion (T1_MOTION)</option>
           </select>
         </label>
-        <label><span data-i18n="cfg.holdoff.label">Holdoff (µs)</span>
-          <input id="cfg-holdoff" type="number" min="0" max="1000000" step="100" value="2000" />
+        <label><span data-i18n="cfg.holdoff.label">Holdoff (ms)</span>
+          <input id="cfg-holdoff" type="number" min="0" max="1000" step="10" value="200" />
         </label>
         <label><span data-i18n="cfg.timeout.label">Timeout / watchdog (µs)</span>
           <input id="cfg-timeout" type="number" min="100" max="50000000" step="1000" value="100000" />
@@ -222,6 +233,7 @@
       </div>
       <div id="cfg-note" class="note" data-i18n="cfg.noteDefault">Free combinations: any T0 pull × edge × axis.
         A warning will appear here when the combination is unusual.</div>
+      <div id="cfg-preset-note" class="note hidden"></div>
     </section>
 
     <!-- ===================== estatísticas ===================== -->

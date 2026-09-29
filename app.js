@@ -18,6 +18,23 @@ let autoStatTimer = null;
 const $ = (id) => document.getElementById(id);
 const fmtUs = (ns) => (ns === undefined || ns === null) ? "—"
                       : (ns / 1000).toFixed(ns < 100000 ? 2 : 1) + " µs";
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+/* ============================ tema claro/escuro ============================ */
+function readTheme() {
+  try { return localStorage.getItem("theme") === "light" ? "light" : "dark"; }
+  catch { return "dark"; }
+}
+
+function applyTheme(next) {
+  const light = next === "light";
+  if (light) document.documentElement.dataset.theme = "light";
+  else delete document.documentElement.dataset.theme;
+  const btn = $("btn-theme");
+  if (btn) btn.textContent = light ? "🌙" : "☀️";   /* glifo = estado destino */
+  try { localStorage.setItem("theme", light ? "light" : "dark"); } catch {}
+  redraw();
+}
 
 /* ============================ log ============================ */
 function logLine(cls, text) {
@@ -83,8 +100,8 @@ function drawScatter() {
   const padT = 8, padB = 22, padL = 48;
 
   // grid
-  ctx.strokeStyle = "#1c2433";
-  ctx.fillStyle = "#7c8aa5";
+  ctx.strokeStyle = cssVar("--grid");
+  ctx.fillStyle = cssVar("--mut");
   ctx.font = "10px monospace";
   for (let i = 0; i <= 4; i++) {
     const y = padT + (i / 4) * (H - padT - padB);
@@ -96,7 +113,7 @@ function drawScatter() {
   const xFor = (i) => padL + (i / Math.max(1, use.length - 1)) * (W - padL - 6);
   const yFor = (v) => padT + (1 - (v - min) / span) * (H - padT - padB);
 
-  ctx.fillStyle = "#39d0a0";
+  ctx.fillStyle = cssVar("--acc");
   ctx.beginPath();
   for (let i = 0; i < use.length; i++) {
     ctx.moveTo(xFor(i) + 1, yFor(use[i].lat));
@@ -105,7 +122,7 @@ function drawScatter() {
   ctx.fill();
 
   // média móvel
-  ctx.strokeStyle = "#4da3ff";
+  ctx.strokeStyle = cssVar("--acc2");
   ctx.lineWidth = 1.4;
   ctx.beginPath();
   const WINDOW = 64;
@@ -136,7 +153,7 @@ function drawHistogram() {
   const peak = Math.max(...counts);
   const bw = W / BINS;
 
-  ctx.fillStyle = "#39d0a0";
+  ctx.fillStyle = cssVar("--acc");
   for (let i = 0; i < BINS; i++) {
     const h = (counts[i] / peak) * (H - 24);
     ctx.fillRect(i * bw + 1, H - h, bw - 2, h);
@@ -278,35 +295,72 @@ function setUi(on) {
   $("live-dot").classList.toggle("on", on);
 }
 
+/* ============================ presets de config ============================ */
+/* mode: null = preserva o eixo atual. holdoff em ms (a UI usa ms, o firmware µs). */
+const PRESETS = {
+  fita:    { t0pull: "up", edge: "f", mode: "c", holdoff: 200 },
+  optical: { t0pull: "f",  edge: "f", mode: null, holdoff: 200 },
+  gx:      { t0pull: "f",  edge: "r", mode: "c", holdoff: 200 },
+};
+
+const holdoffMs = () => Math.min(1000, Math.max(0, Number($("cfg-holdoff").value) || 0));
+const holdoffUs = () => Math.min(1000000, Math.round(holdoffMs() * 1000));
+
+function applyPreset(key) {
+  const p = PRESETS[key];
+  if (!p) return;
+  $("cfg-t0pull").value = p.t0pull;
+  $("cfg-edge").value = p.edge;
+  if (p.mode) $("cfg-mode").value = p.mode;
+  $("cfg-holdoff").value = p.holdoff;
+  cfgNote();
+}
+
+function matchPreset() {
+  const pull = $("cfg-t0pull").value, edge = $("cfg-edge").value, mode = $("cfg-mode").value;
+  const ho = holdoffMs();
+  for (const [key, p] of Object.entries(PRESETS)) {
+    if (p.t0pull === pull && p.edge === edge && p.holdoff === ho && (!p.mode || p.mode === mode)) return key;
+  }
+  return "";
+}
+
 function cfgNote() {
   const pull = $("cfg-t0pull").value;
   const edge = $("cfg-edge").value;
-  const note = $("cfg-note");
-  let key = "note.ok";
-  if (pull === "up" && edge === "f") key = "note.upFall";
-  else if (pull === "f" && edge === "r") key = "note.fRise";
-  else if (pull === "f") key = "note.fFloat";
-  note.textContent = I18N.t(key);
-  note.classList.toggle("bad", key === "note.fFloat");
+  $("cfg-note").textContent =
+    I18N.t(pull === "up" && edge === "f" ? "note.upFall" : "note.ok");
+
+  const key = matchPreset();
+  $("cfg-preset").value = key;
+  const pnote = $("cfg-preset-note");
+  pnote.textContent = key ? I18N.t(`cfg.preset.note.${key}`) : "";
+  pnote.classList.toggle("hidden", !key);
 }
 
 /* ============================ eventos UI ============================ */
 function bindUI() {
   $("btn-connect").onclick = connect;
   $("btn-disconnect").onclick = disconnect;
+  $("btn-theme").onclick = () =>
+    applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
 
   $("btn-apply").onclick = async () => {
-    await sendLine(`CONF ${$("cfg-t0pull").value} ${$("cfg-edge").value} ${$("cfg-mode").value} ${$("cfg-holdoff").value} ${$("cfg-timeout").value}`);
+    await sendLine(`CONF ${$("cfg-t0pull").value} ${$("cfg-edge").value} ${$("cfg-mode").value} ${holdoffUs()} ${$("cfg-timeout").value}`);
   };
   $("btn-start").onclick = async () => { running = true; startedAt = Date.now(); await sendLine("START"); };
   $("btn-stop").onclick  = async () => { running = false; await sendLine("STOP"); };
   $("btn-stat").onclick  = async () => { await sendLine("STAT"); };
   $("btn-reset").onclick = async () => {
-    $("cfg-holdoff").value = 2000;
+    $("cfg-holdoff").value = 200;
     $("cfg-timeout").value = 100000;
+    cfgNote();
     await sendLine("RESET");
   };
 
+  $("cfg-preset").addEventListener("change", (e) => {
+    if (e.target.value) applyPreset(e.target.value);
+  });
   ["cfg-t0pull", "cfg-edge", "cfg-mode", "cfg-holdoff", "cfg-timeout"].forEach(
     (id) => $(id).addEventListener("change", cfgNote));
   cfgNote();
@@ -355,7 +409,7 @@ function exportJson() {
 function readConfig() {
   return {
     t0pull: $("cfg-t0pull").value, edge: $("cfg-edge").value,
-    mode: $("cfg-mode").value, holdoff_us: Number($("cfg-holdoff").value),
+    mode: $("cfg-mode").value, holdoff_ms: holdoffMs(), holdoff_us: holdoffUs(),
     timeout_us: Number($("cfg-timeout").value)
   };
 }
@@ -386,5 +440,6 @@ if (!("serial" in navigator)) {
   $("btn-connect").disabled = true;
   $("conn-hint").textContent = I18N.t("ws.notAvail");
 }
+applyTheme(readTheme());
 bindUI();
 redraw();

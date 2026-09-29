@@ -23,7 +23,7 @@ I18N_STRINGS.en = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: open via file:// or GitHub Pages",
   "lang.label": "Language",
-
+  "theme.toggle": "Toggle theme",
   "conn.title": "Connection",
   "conn.connectBtn": "Connect to meter",
   "conn.disconnectBtn": "Disconnect",
@@ -31,12 +31,10 @@ I18N_STRINGS.en = {
   "conn.stateOk": "connected",
   "ws.warn": "WebSerial is not available in this browser. Use Chrome/Edge (desktop) with HTTPS, localhost or GitHub Pages.",
   "ws.notAvail": "WebSerial not available in this browser",
-
   "wiring.title": "Wiring (Pico 2 pinout)",
   "wiring.svgAria": "Raspberry Pi Pico 2 pinout diagram",
   "wiring.svgTitle": "Pico 2 pinout — T0, T1_CLICK, T1_MOTION and GND",
   "wiring.legend": "T0 = physical action · T1_CLICK = click response · T1_MOTION = motion response · GND = common ground",
-
   "pin.step1": "<b>T0</b> (physical action: switch / photodiode+comparator) &rarr; <code>GP2</code> = pin <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (CH32V307 click output) &rarr; <code>GP3</code> = pin <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (CH32V307 motion output) &rarr; <code>GP4</code> = pin <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -44,7 +42,6 @@ I18N_STRINGS.en = {
   "pin.step5": "<b>USB</b> &rarr; the Pico 2&rsquo;s own USB port (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (on-board): blinks every 500&nbsp;ms while the firmware is alive.",
   "pin.step7": "Signals are 3.3&nbsp;V &mdash; <b>do NOT apply 5&nbsp;V</b> to the pins.",
-
   "cfg.title": "Measurement configuration",
   "cfg.t0pull.label": "T0 pull / physical",
   "cfg.t0pull.f": "float (no pull)",
@@ -56,11 +53,18 @@ I18N_STRINGS.en = {
   "cfg.mode.label": "Axis under test",
   "cfg.mode.c": "Click (T1_CLICK)",
   "cfg.mode.m": "Motion (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Preset",
+  "cfg.preset.custom": "Custom (manual)",
+  "cfg.preset.fita": "Conductive tape",
+  "cfg.preset.optical": "Optical switch",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "Conductive tape closes the contact when pressed, so the pulled-up T0 goes LOW: falling edge.",
+  "cfg.preset.note.optical": "The mouse polling produces a serration of falling edges per press; the holdoff discards the extra edges and keeps the first as T0.",
+  "cfg.preset.note.gx": "The click changes the mouse level: rising edge with T0 floating.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / watchdog (µs)",
   "cfg.apply": "Apply config",
   "cfg.noteDefault": "Free combinations: any T0 pull × edge × axis. A warning will appear here when the combination is unusual.",
-
   "stats.title": "Statistics",
   "stat.last": "last latency",
   "stat.avg": "average (active)",
@@ -70,17 +74,14 @@ I18N_STRINGS.en = {
   "stat.elapsed": "elapsed time",
   "stat.seq": "total sequence",
   "stat.timouts": "timeouts / drops",
-
   "chart.title": "Latency profile (active mode)",
   "chart.help": "scatter: sequence × latencies · line = moving average (64)",
   "hist.title": "Histogram (last 256)",
-
   "exp.title": "Events & export",
   "exp.csv": "Export CSV (active)",
   "exp.json": "Export JSON (all)",
   "exp.clear": "Clear data",
   "exp.csvName": "latency",
-
   "log.connected": "connected",
   "log.disconnected": "disconnected",
   "log.connectError": "connection error: ",
@@ -89,12 +90,8 @@ I18N_STRINGS.en = {
   "log.timeout": "#{seq} TIMEOUT (T1 did not arrive in {us} µs)",
   "log.order": "#{seq} ORDER (t1 before t0)",
   "log.dropped": "#{seq} DROPPED (T0 overwritten)",
-
   "note.upFall": "T0 with pull-up and edge = falling: the physical action switches off — classic contact-switch combination.",
-  "note.fRise": "T0 floating, rising edge: simple convention (motion pulse).",
-  "note.fFloat": "Attention: T0 in float mode — noise risk; validate the polarity on an oscilloscope.",
   "note.ok": "Free combination ok.",
-
   "unit.s": "s",
   "unit.min": "min",
   footer: "Side project: medidor-rp2350 — firmware + static page."
@@ -106,7 +103,7 @@ I18N_STRINGS.pt = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: abra por file:// ou GitHub Pages",
   "lang.label": "Idioma",
-
+  "theme.toggle": "Alternar tema",
   "conn.title": "Conexão",
   "conn.connectBtn": "Conectar ao medidor",
   "conn.disconnectBtn": "Desconectar",
@@ -114,12 +111,10 @@ I18N_STRINGS.pt = {
   "conn.stateOk": "conectado",
   "ws.warn": "WebSerial não disponível neste navegador. Use Chrome/Edge (desktop) com HTTPS, localhost ou GitHub Pages.",
   "ws.notAvail": "WebSerial não disponível neste navegador",
-
   "wiring.title": "Como ligar (pinagem do Pico 2)",
   "wiring.svgAria": "Diagrama dos pinos do Raspberry Pi Pico 2",
   "wiring.svgTitle": "Pinagem do Pico 2 — T0, T1_CLICK, T1_MOTION e GND",
   "wiring.legend": "T0 = ação física · T1_CLICK = resposta de clique · T1_MOTION = resposta de movimento · GND = terra comum",
-
   "pin.step1": "<b>T0</b> (ação física: chave / fotodiodo+comparador) &rarr; <code>GP2</code> = pino <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (saída de clique do CH32V307) &rarr; <code>GP3</code> = pino <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (saída de movimento do CH32V307) &rarr; <code>GP4</code> = pino <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -127,7 +122,6 @@ I18N_STRINGS.pt = {
   "pin.step5": "<b>USB</b> &rarr; porta USB do próprio Pico 2 (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (on-board): pisca a cada 500&nbsp;ms quando o firmware está vivo.",
   "pin.step7": "Os sinais são em 3,3&nbsp;V &mdash; <b>não aplique 5&nbsp;V</b> nos pinos.",
-
   "cfg.title": "Configuração da medição",
   "cfg.t0pull.label": "T0 pull / física",
   "cfg.t0pull.f": "float (sem pull)",
@@ -139,11 +133,18 @@ I18N_STRINGS.pt = {
   "cfg.mode.label": "Eixo em teste",
   "cfg.mode.c": "Clique (T1_CLICK)",
   "cfg.mode.m": "Movimento (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Predefinição",
+  "cfg.preset.custom": "Personalizado (manual)",
+  "cfg.preset.fita": "Fita condutiva",
+  "cfg.preset.optical": "Switch óptico",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "A fita condutiva fecha o contato ao ser pressionada, então o T0 com pull-up vai para LOW: borda de descida.",
+  "cfg.preset.note.optical": "O polling do mouse gera uma serrilhada de bordas de descida a cada aperto; o holdoff descarta as bordas extras e mantém a primeira como T0.",
+  "cfg.preset.note.gx": "O clique altera o nível do mouse: borda de subida com o T0 flutuante.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / watchdog (µs)",
   "cfg.apply": "Aplicar config",
   "cfg.noteDefault": "Combinações livres: qualquer T0 pull × borda × eixo. Aviso quando a combinação for incomum será mostrado aqui.",
-
   "stats.title": "Estatísticas",
   "stat.last": "última latência",
   "stat.avg": "média (ativo)",
@@ -153,17 +154,14 @@ I18N_STRINGS.pt = {
   "stat.elapsed": "tempo decorrido",
   "stat.seq": "sequência total",
   "stat.timouts": "timeouts / drops",
-
   "chart.title": "Perfil da latência (modo ativo)",
   "chart.help": "scatter: sequência × latências · linha = média móvel (64)",
   "hist.title": "Histograma (últimas 256)",
-
   "exp.title": "Eventos & exportação",
   "exp.csv": "Exportar CSV (ativo)",
   "exp.json": "Exportar JSON (todos)",
   "exp.clear": "Limpar dados",
   "exp.csvName": "latencia",
-
   "log.connected": "conectado",
   "log.disconnected": "desconectado",
   "log.connectError": "erro de conexão: ",
@@ -172,12 +170,8 @@ I18N_STRINGS.pt = {
   "log.timeout": "#{seq} TIMEOUT (T1 não veio em {us} µs)",
   "log.order": "#{seq} ORDER (t1 antes de t0)",
   "log.dropped": "#{seq} DROPPED (T0 sobrescrito)",
-
   "note.upFall": "T0 com pull-up e borda = descida: ação física desliga — combinação clássica de chave de contato.",
-  "note.fRise": "T0 flutuante, borda de subida: convenção simples (pulso de motion).",
-  "note.fFloat": "Atenção: T0 em modo float — risco de ruído; valide a polaridade no osciloscópio.",
   "note.ok": "Combinação livre ok.",
-
   "unit.s": "s",
   "unit.min": "min",
   footer: "Projeto side: medidor-rp2350 — firmware + página estática."
@@ -189,7 +183,7 @@ I18N_STRINGS.es = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: abre mediante file:// o GitHub Pages",
   "lang.label": "Idioma",
-
+  "theme.toggle": "Cambiar tema",
   "conn.title": "Conexión",
   "conn.connectBtn": "Conectar al medidor",
   "conn.disconnectBtn": "Desconectar",
@@ -197,12 +191,10 @@ I18N_STRINGS.es = {
   "conn.stateOk": "conectado",
   "ws.warn": "WebSerial no está disponible en este navegador. Usa Chrome/Edge (escritorio) con HTTPS, localhost o GitHub Pages.",
   "ws.notAvail": "WebSerial no disponible en este navegador",
-
   "wiring.title": "Cómo conectar (pinout del Pico 2)",
   "wiring.svgAria": "Diagrama del pinout del Raspberry Pi Pico 2",
   "wiring.svgTitle": "Pinout del Pico 2 — T0, T1_CLICK, T1_MOTION y GND",
   "wiring.legend": "T0 = acción física · T1_CLICK = respuesta de clic · T1_MOTION = respuesta de movimiento · GND = tierra común",
-
   "pin.step1": "<b>T0</b> (acción física: interruptor / fotodiodo+comparador) &rarr; <code>GP2</code> = pin <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (salida de clic del CH32V307) &rarr; <code>GP3</code> = pin <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (salida de movimiento del CH32V307) &rarr; <code>GP4</code> = pin <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -210,7 +202,6 @@ I18N_STRINGS.es = {
   "pin.step5": "<b>USB</b> &rarr; puerto USB del propio Pico 2 (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (on-board): parpadea cada 500&nbsp;ms cuando el firmware está vivo.",
   "pin.step7": "Las señales son de 3,3&nbsp;V &mdash; <b>no apliques 5&nbsp;V</b> a los pines.",
-
   "cfg.title": "Configuración de la medición",
   "cfg.t0pull.label": "T0 pull / física",
   "cfg.t0pull.f": "float (sin pull)",
@@ -222,11 +213,18 @@ I18N_STRINGS.es = {
   "cfg.mode.label": "Eje en prueba",
   "cfg.mode.c": "Clic (T1_CLICK)",
   "cfg.mode.m": "Movimiento (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Preajuste",
+  "cfg.preset.custom": "Personalizado (manual)",
+  "cfg.preset.fita": "Cinta conductiva",
+  "cfg.preset.optical": "Interruptor óptico",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "La cinta conductiva cierra el contacto al presionarla, así que el T0 con pull-up baja a LOW: borde de bajada.",
+  "cfg.preset.note.optical": "El sondeo del ratón genera una seriación de bordes de bajada por pulsación; el holdoff descarta los bordes sobrantes y conserva el primero como T0.",
+  "cfg.preset.note.gx": "El clic cambia el nivel del ratón: borde de subida con T0 flotante.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / watchdog (µs)",
   "cfg.apply": "Aplicar config",
   "cfg.noteDefault": "Combinaciones libres: cualquier pull de T0 × borde × eje. Aquí se avisará si la combinación es inusual.",
-
   "stats.title": "Estadísticas",
   "stat.last": "última latencia",
   "stat.avg": "media (activo)",
@@ -236,17 +234,14 @@ I18N_STRINGS.es = {
   "stat.elapsed": "tiempo transcurrido",
   "stat.seq": "secuencia total",
   "stat.timouts": "timeouts / drops",
-
   "chart.title": "Perfil de latencia (modo activo)",
   "chart.help": "scatter: secuencia × latencias · línea = media móvil (64)",
   "hist.title": "Histograma (últimas 256)",
-
   "exp.title": "Eventos y exportación",
   "exp.csv": "Exportar CSV (activo)",
   "exp.json": "Exportar JSON (todos)",
   "exp.clear": "Limpiar datos",
   "exp.csvName": "latencia",
-
   "log.connected": "conectado",
   "log.disconnected": "desconectado",
   "log.connectError": "error de conexión: ",
@@ -255,12 +250,8 @@ I18N_STRINGS.es = {
   "log.timeout": "#{seq} TIMEOUT (T1 no llegó en {us} µs)",
   "log.order": "#{seq} ORDER (t1 antes de t0)",
   "log.dropped": "#{seq} DROPPED (T0 sobrescrito)",
-
   "note.upFall": "T0 con pull-up y borde = bajada: la acción física se apaga — combinación clásica de interruptor de contacto.",
-  "note.fRise": "T0 flotante, borde de subida: convención simple (pulso de motion).",
-  "note.fFloat": "Atención: T0 en modo float — riesgo de ruido; valida la polaridad con un osciloscopio.",
   "note.ok": "Combinación libre correcta.",
-
   "unit.s": "s",
   "unit.min": "min",
   footer: "Proyecto paralelo: medidor-rp2350 — firmware + página estática."
@@ -272,7 +263,7 @@ I18N_STRINGS.fr = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline : ouvrez via file:// ou GitHub Pages",
   "lang.label": "Langue",
-
+  "theme.toggle": "Changer de thème",
   "conn.title": "Connexion",
   "conn.connectBtn": "Connecter au mesureur",
   "conn.disconnectBtn": "Déconnecter",
@@ -280,12 +271,10 @@ I18N_STRINGS.fr = {
   "conn.stateOk": "connecté",
   "ws.warn": "WebSerial n'est pas disponible dans ce navigateur. Utilisez Chrome/Edge (desktop) avec HTTPS, localhost ou GitHub Pages.",
   "ws.notAvail": "WebSerial indisponible dans ce navigateur",
-
   "wiring.title": "Câblage (pinout du Pico 2)",
   "wiring.svgAria": "Diagramme du pinout du Raspberry Pi Pico 2",
   "wiring.svgTitle": "Pinout du Pico 2 — T0, T1_CLICK, T1_MOTION et GND",
   "wiring.legend": "T0 = action physique · T1_CLICK = réponse au clic · T1_MOTION = réponse au mouvement · GND = masse commune",
-
   "pin.step1": "<b>T0</b> (action physique : interrupteur / photodiode+comparateur) &rarr; <code>GP2</code> = broche <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (sortie de clic du CH32V307) &rarr; <code>GP3</code> = broche <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (sortie de mouvement du CH32V307) &rarr; <code>GP4</code> = broche <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -293,7 +282,6 @@ I18N_STRINGS.fr = {
   "pin.step5": "<b>USB</b> &rarr; port USB du Pico 2 lui-même (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (on-board) : clignote toutes les 500&nbsp;ms quand le firmware est actif.",
   "pin.step7": "Les signaux sont en 3,3&nbsp;V &mdash; <b>n'appliquez pas 5&nbsp;V</b> sur les broches.",
-
   "cfg.title": "Configuration de la mesure",
   "cfg.t0pull.label": "T0 pull / physique",
   "cfg.t0pull.f": "float (sans pull)",
@@ -305,11 +293,18 @@ I18N_STRINGS.fr = {
   "cfg.mode.label": "Axe testé",
   "cfg.mode.c": "Clic (T1_CLICK)",
   "cfg.mode.m": "Mouvement (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Préréglage",
+  "cfg.preset.custom": "Personnalisé (manuel)",
+  "cfg.preset.fita": "Bande conductrice",
+  "cfg.preset.optical": "Interrupteur optique",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "La bande conductrice ferme le contact à l'appui : le T0 avec pull-up passe à LOW, front descendant.",
+  "cfg.preset.note.optical": "Le polling de la souris produit une série de fronts descendants par clic ; le holdoff écarte les fronts superflus et garde le premier comme T0.",
+  "cfg.preset.note.gx": "Le clic change le niveau de la souris : front montant avec T0 flottant.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / watchdog (µs)",
   "cfg.apply": "Appliquer la config",
   "cfg.noteDefault": "Combinaisons libres : tout pull de T0 × front × axe. Un avertissement s'affichera ici si la combinaison est inhabituelle.",
-
   "stats.title": "Statistiques",
   "stat.last": "dernière latence",
   "stat.avg": "moyenne (actif)",
@@ -319,17 +314,14 @@ I18N_STRINGS.fr = {
   "stat.elapsed": "temps écoulé",
   "stat.seq": "séquence totale",
   "stat.timouts": "timeouts / drops",
-
   "chart.title": "Profil de latence (mode actif)",
   "chart.help": "scatter : séquence × latences · ligne = moyenne mobile (64)",
   "hist.title": "Histogramme (256 dernières)",
-
   "exp.title": "Événements & export",
   "exp.csv": "Exporter CSV (actif)",
   "exp.json": "Exporter JSON (tout)",
   "exp.clear": "Effacer les données",
   "exp.csvName": "latence",
-
   "log.connected": "connecté",
   "log.disconnected": "déconnecté",
   "log.connectError": "erreur de connexion : ",
@@ -338,12 +330,8 @@ I18N_STRINGS.fr = {
   "log.timeout": "#{seq} TIMEOUT (T1 pas arrivé en {us} µs)",
   "log.order": "#{seq} ORDER (t1 avant t0)",
   "log.dropped": "#{seq} DROPPED (T0 écrasé)",
-
   "note.upFall": "T0 en pull-up et front = descente : l'action physique coupe — combinaison classique d'interrupteur de contact.",
-  "note.fRise": "T0 flottant, front montant : convention simple (pulse de motion).",
-  "note.fFloat": "Attention : T0 en mode float — risque de bruit ; validez la polarité à l'oscilloscope.",
   "note.ok": "Combinaison libre correcte.",
-
   "unit.s": "s",
   "unit.min": "min",
   footer: "Projet parallèle : medidor-rp2350 — firmware + page statique."
@@ -355,7 +343,7 @@ I18N_STRINGS.de = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: über file:// oder GitHub Pages öffnen",
   "lang.label": "Sprache",
-
+  "theme.toggle": "Design wechseln",
   "conn.title": "Verbindung",
   "conn.connectBtn": "Mit Messgerät verbinden",
   "conn.disconnectBtn": "Trennen",
@@ -363,12 +351,10 @@ I18N_STRINGS.de = {
   "conn.stateOk": "verbunden",
   "ws.warn": "WebSerial ist in diesem Browser nicht verfügbar. Verwende Chrome/Edge (Desktop) mit HTTPS, localhost oder GitHub Pages.",
   "ws.notAvail": "WebSerial in diesem Browser nicht verfügbar",
-
   "wiring.title": "Verdrahtung (Pico 2 Pinout)",
   "wiring.svgAria": "Raspberry Pi Pico 2 Pinout-Diagramm",
   "wiring.svgTitle": "Pico 2 Pinout — T0, T1_CLICK, T1_MOTION und GND",
   "wiring.legend": "T0 = physikalische Aktion · T1_CLICK = Klick-Antwort · T1_MOTION = Bewegungs-Antwort · GND = gemeinsame Masse",
-
   "pin.step1": "<b>T0</b> (physikalische Aktion: Schalter / Fotodiode+Komparator) &rarr; <code>GP2</code> = Pin <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (Klick-Ausgang des CH32V307) &rarr; <code>GP3</code> = Pin <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (Bewegungs-Ausgang des CH32V307) &rarr; <code>GP4</code> = Pin <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -376,7 +362,6 @@ I18N_STRINGS.de = {
   "pin.step5": "<b>USB</b> &rarr; den eigenen USB-Anschluss des Pico 2 nutzen (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (on-board): blinkt alle 500&nbsp;ms, solange die Firmware läuft.",
   "pin.step7": "Die Signale sind 3,3&nbsp;V &mdash; <b>kein 5&nbsp;V auf die Pins</b> anlegen.",
-
   "cfg.title": "Messungskonfiguration",
   "cfg.t0pull.label": "T0-Pull / physikalisch",
   "cfg.t0pull.f": "float (ohne Pull)",
@@ -388,11 +373,18 @@ I18N_STRINGS.de = {
   "cfg.mode.label": "Zu testende Achse",
   "cfg.mode.c": "Klick (T1_CLICK)",
   "cfg.mode.m": "Bewegung (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Voreinstellung",
+  "cfg.preset.custom": "Benutzerdefiniert (manuell)",
+  "cfg.preset.fita": "Leitender Streifen",
+  "cfg.preset.optical": "Optischer Schalter",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "Das leitende Band schließt beim Drücken den Kontakt, damit zieht das per Pull-up hochgezogene T0 auf LOW: fallende Flanke.",
+  "cfg.preset.note.optical": "Das Polling der Maus erzeugt pro Tastendruck eine Sägefolge fallender Flanken; der Holdoff verwirft die überzähligen und behält die erste als T0.",
+  "cfg.preset.note.gx": "Der Klick ändert den Pegel der Maus: steigende Flanke mit fliegendem T0.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / Watchdog (µs)",
   "cfg.apply": "Konfig anwenden",
   "cfg.noteDefault": "Freie Kombinationen: beliebiger T0-Pull × Flanke × Achse. Eine Warnung erscheint hier bei ungewöhnlichen Kombinationen.",
-
   "stats.title": "Statistiken",
   "stat.last": "letzte Latenz",
   "stat.avg": "Mittelwert (aktiv)",
@@ -402,17 +394,14 @@ I18N_STRINGS.de = {
   "stat.elapsed": "verstrichene Zeit",
   "stat.seq": "Gesamtsequenz",
   "stat.timouts": "Timeouts / Drops",
-
   "chart.title": "Latenzprofil (aktiver Modus)",
   "chart.help": "scatter: Sequenz × Latenzen · Linie = gleitender Mittelwert (64)",
   "hist.title": "Histogramm (letzte 256)",
-
   "exp.title": "Ereignisse & Export",
   "exp.csv": "CSV exportieren (aktiv)",
   "exp.json": "JSON exportieren (alle)",
   "exp.clear": "Daten löschen",
   "exp.csvName": "latency",
-
   "log.connected": "verbunden",
   "log.disconnected": "getrennt",
   "log.connectError": "Verbindungsfehler: ",
@@ -421,12 +410,8 @@ I18N_STRINGS.de = {
   "log.timeout": "#{seq} TIMEOUT (T1 kam nicht in {us} µs)",
   "log.order": "#{seq} ORDER (t1 vor t0)",
   "log.dropped": "#{seq} DROPPED (T0 überschrieben)",
-
   "note.upFall": "T0 mit Pull-up und fallender Flanke: die physische Aktion schaltet ab — klassische Taster-Kombination.",
-  "note.fRise": "T0 float, steigende Flanke: einfache Konvention (Motion-Puls).",
-  "note.fFloat": "Achtung: T0 im Float-Modus — Rauschrisiko; Polarität am Oszilloskop prüfen.",
   "note.ok": "Freie Kombination ok.",
-
   "unit.s": "s",
   "unit.min": "min",
   footer: "Nebenprojekt: medidor-rp2350 — Firmware + statische Seite."
@@ -438,7 +423,7 @@ I18N_STRINGS.it = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: apri con file:// o GitHub Pages",
   "lang.label": "Lingua",
-
+  "theme.toggle": "Cambia tema",
   "conn.title": "Connessione",
   "conn.connectBtn": "Connetti al misuratore",
   "conn.disconnectBtn": "Disconnetti",
@@ -446,12 +431,10 @@ I18N_STRINGS.it = {
   "conn.stateOk": "connesso",
   "ws.warn": "WebSerial non è disponibile in questo browser. Usa Chrome/Edge (desktop) con HTTPS, localhost o GitHub Pages.",
   "ws.notAvail": "WebSerial non disponibile in questo browser",
-
   "wiring.title": "Come collegare (pinout del Pico 2)",
   "wiring.svgAria": "Diagramma del pinout del Raspberry Pi Pico 2",
   "wiring.svgTitle": "Pinout del Pico 2 — T0, T1_CLICK, T1_MOTION e GND",
   "wiring.legend": "T0 = azione fisica · T1_CLICK = risposta al click · T1_MOTION = risposta al movimento · GND = terra comune",
-
   "pin.step1": "<b>T0</b> (azione fisica: interruttore / fotodiodo+comparatore) &rarr; <code>GP2</code> = pin <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (uscita di click del CH32V307) &rarr; <code>GP3</code> = pin <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (uscita di movimento del CH32V307) &rarr; <code>GP4</code> = pin <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -459,7 +442,6 @@ I18N_STRINGS.it = {
   "pin.step5": "<b>USB</b> &rarr; porta USB dello stesso Pico 2 (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (on-board): lampeggia ogni 500&nbsp;ms quando il firmware è vivo.",
   "pin.step7": "I segnali sono a 3,3&nbsp;V &mdash; <b>non applicare 5&nbsp;V</b> ai pin.",
-
   "cfg.title": "Configurazione della misura",
   "cfg.t0pull.label": "T0 pull / fisico",
   "cfg.t0pull.f": "float (senza pull)",
@@ -471,11 +453,18 @@ I18N_STRINGS.it = {
   "cfg.mode.label": "Asse in prova",
   "cfg.mode.c": "Click (T1_CLICK)",
   "cfg.mode.m": "Movimento (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Preimpostazione",
+  "cfg.preset.custom": "Personalizzato (manuale)",
+  "cfg.preset.fita": "Nastro conduttivo",
+  "cfg.preset.optical": "Interruttore ottico",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "Il nastro conduttivo chiude il contatto alla pressione, quindi il T0 con pull-up va a LOW: fronte di discesa.",
+  "cfg.preset.note.optical": "Il polling del mouse genera una sega di fronti di discesa a ogni click; l'holdoff scarta i fronti in eccesso e mantiene il primo come T0.",
+  "cfg.preset.note.gx": "Il click cambia il livello del mouse: fronte di salita con T0 flottante.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / watchdog (µs)",
   "cfg.apply": "Applica config",
   "cfg.noteDefault": "Combinazioni libere: qualsiasi pull di T0 × fronte × asse. Un avviso apparirà qui se la combinazione è inusuale.",
-
   "stats.title": "Statistiche",
   "stat.last": "ultima latenza",
   "stat.avg": "media (attivo)",
@@ -485,17 +474,14 @@ I18N_STRINGS.it = {
   "stat.elapsed": "tempo trascorso",
   "stat.seq": "sequenza totale",
   "stat.timouts": "timeout / drop",
-
   "chart.title": "Profilo di latenza (modalità attiva)",
   "chart.help": "scatter: sequenza × latenze · linea = media mobile (64)",
   "hist.title": "Istogramma (ultimi 256)",
-
   "exp.title": "Eventi ed esportazione",
   "exp.csv": "Esporta CSV (attivo)",
   "exp.json": "Esporta JSON (tutti)",
   "exp.clear": "Cancella dati",
   "exp.csvName": "latency",
-
   "log.connected": "connesso",
   "log.disconnected": "disconnesso",
   "log.connectError": "errore di connessione: ",
@@ -504,12 +490,8 @@ I18N_STRINGS.it = {
   "log.timeout": "#{seq} TIMEOUT (T1 non arrivato in {us} µs)",
   "log.order": "#{seq} ORDER (t1 prima di t0)",
   "log.dropped": "#{seq} DROPPED (T0 sovrascritto)",
-
   "note.upFall": "T0 con pull-up e fronte = discesa: l'azione fisica si spegne — combinazione classica da interruttore di contatto.",
-  "note.fRise": "T0 flottante, fronte di salita: convenzione semplice (impulso di motion).",
-  "note.fFloat": "Attenzione: T0 in modalità float — rischio di rumore; valida la polarità con un oscilloscopio.",
   "note.ok": "Combinazione libera ok.",
-
   "unit.s": "s",
   "unit.min": "min",
   footer: "Progetto collaterale: medidor-rp2350 — firmware + pagina statica."
@@ -521,7 +503,7 @@ I18N_STRINGS.zh = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline：通过 file:// 或 GitHub Pages 打开",
   "lang.label": "语言",
-
+  "theme.toggle": "切换主题",
   "conn.title": "连接",
   "conn.connectBtn": "连接到测量仪",
   "conn.disconnectBtn": "断开连接",
@@ -529,12 +511,10 @@ I18N_STRINGS.zh = {
   "conn.stateOk": "已连接",
   "ws.warn": "当前浏览器不支持 WebSerial。请使用 Chrome/Edge（桌面版），并通过 HTTPS、localhost 或 GitHub Pages 访问。",
   "ws.notAvail": "当前浏览器不支持 WebSerial",
-
   "wiring.title": "接线方式（Pico 2 引脚）",
   "wiring.svgAria": "Raspberry Pi Pico 2 引脚图",
   "wiring.svgTitle": "Pico 2 引脚 — T0、T1_CLICK、T1_MOTION 与 GND",
   "wiring.legend": "T0 = 物理动作 · T1_CLICK = 点击响应 · T1_MOTION = 移动响应 · GND = 公共接地",
-
   "pin.step1": "<b>T0</b>（物理动作：开关 / 光电二极管+比较器）&rarr; <code>GP2</code> = 引脚 <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b>（CH32V307 的点击输出）&rarr; <code>GP3</code> = 引脚 <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b>（CH32V307 的移动输出）&rarr; <code>GP4</code> = 引脚 <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -542,7 +522,6 @@ I18N_STRINGS.zh = {
   "pin.step5": "<b>USB</b> &rarr; Pico 2 自带的 USB 端口（WebSerial/CDC）。",
   "pin.step6": "<b>LED GP25</b>（板上）：固件运行时会每 500&nbsp;ms 闪烁一次。",
   "pin.step7": "信号为 3.3&nbsp;V &mdash; <b>切勿在引脚上施加 5&nbsp;V</b>。",
-
   "cfg.title": "测量配置",
   "cfg.t0pull.label": "T0 上/下拉 / 物理",
   "cfg.t0pull.f": "浮空（无上/下拉）",
@@ -554,11 +533,18 @@ I18N_STRINGS.zh = {
   "cfg.mode.label": "待测轴",
   "cfg.mode.c": "点击（T1_CLICK）",
   "cfg.mode.m": "移动（T1_MOTION）",
-  "cfg.holdoff.label": "保持时间（µs）",
+  "cfg.preset.label": "预设",
+  "cfg.preset.custom": "自定义（手动）",
+  "cfg.preset.fita": "导电胶带",
+  "cfg.preset.optical": "光学开关",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "按下时导电胶带闭合触点，因此上拉的 T0 变为低电平：下降沿。",
+  "cfg.preset.note.optical": "鼠标轮询在每次按下时产生一串下降沿抖动；holdoff 丢弃多余的边沿，只保留第一个作为 T0。",
+  "cfg.preset.note.gx": "点击会改变鼠标的电平：T0 浮空、上升沿。",
+  "cfg.holdoff.label": "保持时间（ms）",
   "cfg.timeout.label": "超时 / 看门狗（µs）",
   "cfg.apply": "应用配置",
   "cfg.noteDefault": "自由组合：任意 T0 上/下拉 × 边沿 × 轴。若组合特殊，此处会显示提示。",
-
   "stats.title": "统计信息",
   "stat.last": "最近延迟",
   "stat.avg": "平均值（活动）",
@@ -568,17 +554,14 @@ I18N_STRINGS.zh = {
   "stat.elapsed": "已用时间",
   "stat.seq": "总序号",
   "stat.timouts": "超时 / 丢弃",
-
   "chart.title": "延迟分布（活动模式）",
   "chart.help": "散点：序号 × 延迟 · 曲线 = 移动平均（64）",
   "hist.title": "直方图（最近 256 个）",
-
   "exp.title": "事件与导出",
   "exp.csv": "导出 CSV（活动）",
   "exp.json": "导出 JSON（全部）",
   "exp.clear": "清空数据",
   "exp.csvName": "latencia",
-
   "log.connected": "已连接",
   "log.disconnected": "已断开",
   "log.connectError": "连接错误：",
@@ -587,12 +570,8 @@ I18N_STRINGS.zh = {
   "log.timeout": "#{seq} 超时（T1 在 {us} µs 内未到达）",
   "log.order": "#{seq} 顺序异常（t1 早于 t0）",
   "log.dropped": "#{seq} 已丢弃（T0 被覆盖）",
-
   "note.upFall": "T0 上拉且边沿为下降沿：物理动作断开——接触开关的经典组合。",
-  "note.fRise": "T0 浮空、上升沿：简单约定（移动脉冲）。",
-  "note.fFloat": "注意：T0 为浮空模式——有噪声风险；请用示波器验证极性。",
   "note.ok": "自由组合正常。",
-
   "unit.s": "秒",
   "unit.min": "分",
   footer: "个人项目：medidor-rp2350 — 固件 + 静态页面。"
@@ -604,7 +583,7 @@ I18N_STRINGS.ja = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: file:// または GitHub Pages から開く",
   "lang.label": "言語",
-
+  "theme.toggle": "テーマ切替",
   "conn.title": "接続",
   "conn.connectBtn": "メーターに接続",
   "conn.disconnectBtn": "切断",
@@ -612,12 +591,10 @@ I18N_STRINGS.ja = {
   "conn.stateOk": "接続済み",
   "ws.warn": "このブラウザでは WebSerial を利用できません。Chrome/Edge（デスクトップ）で HTTPS、localhost、GitHub Pages を使用してください。",
   "ws.notAvail": "このブラウザで WebSerial を利用できません",
-
   "wiring.title": "配線方法（Pico 2 ピン配置）",
   "wiring.svgAria": "Raspberry Pi Pico 2 のピン配置図",
   "wiring.svgTitle": "Pico 2 のピン配置 — T0、T1_CLICK、T1_MOTION、GND",
   "wiring.legend": "T0 = 物理的アクション · T1_CLICK = クリック応答 · T1_MOTION = 移動応答 · GND = 共通グランド",
-
   "pin.step1": "<b>T0</b>（物理的アクション：スイッチ / フォトダイオード+コンパレータ）&rarr; <code>GP2</code> = ピン <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b>（CH32V307 のクリック出力）&rarr; <code>GP3</code> = ピン <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b>（CH32V307 の移動出力）&rarr; <code>GP4</code> = ピン <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -625,7 +602,6 @@ I18N_STRINGS.ja = {
   "pin.step5": "<b>USB</b> &rarr; Pico 2 自身の USB ポート（WebSerial/CDC）。",
   "pin.step6": "<b>LED GP25</b>（オンボード）：ファームウェア動作中は 500&nbsp;ms ごとに点滅します。",
   "pin.step7": "信号は 3.3&nbsp;V です &mdash; ピンに <b>5&nbsp;V を印加しないでください</b>。",
-
   "cfg.title": "測定設定",
   "cfg.t0pull.label": "T0 プル / 物理",
   "cfg.t0pull.f": "フロート（プルなし）",
@@ -637,11 +613,18 @@ I18N_STRINGS.ja = {
   "cfg.mode.label": "測定軸",
   "cfg.mode.c": "クリック（T1_CLICK）",
   "cfg.mode.m": "移動（T1_MOTION）",
-  "cfg.holdoff.label": "ホールドオフ（µs）",
+  "cfg.preset.label": "プリセット",
+  "cfg.preset.custom": "カスタム（手動）",
+  "cfg.preset.fita": "導電テープ",
+  "cfg.preset.optical": "光学スイッチ",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "押すと導電テープが接点を閉じるので、プルアップした T0 は LOW になる：立ち下がりエッジ。",
+  "cfg.preset.note.optical": "マウスのポーリングは押すたびに下降エッジのギザギザ（セレーション）を出すため、holdoff が余分なエッジを捨て、最初のひとつを T0 として扱う。",
+  "cfg.preset.note.gx": "クリックでマウスのレベルが変わる：T0 フロート、立ち上がりエッジ。",
+  "cfg.holdoff.label": "ホールドオフ（ms）",
   "cfg.timeout.label": "タイムアウト / ウォッチドッグ（µs）",
   "cfg.apply": "設定を適用",
   "cfg.noteDefault": "自由な組み合わせ：任意の T0 プル × エッジ × 軸。特殊な組み合わせの場合はここに警告が表示されます。",
-
   "stats.title": "統計",
   "stat.last": "最新レイテンシ",
   "stat.avg": "平均（アクティブ）",
@@ -651,17 +634,14 @@ I18N_STRINGS.ja = {
   "stat.elapsed": "経過時間",
   "stat.seq": "総シーケンス",
   "stat.timouts": "タイムアウト / ドロップ",
-
   "chart.title": "レイテンシ分布（アクティブモード）",
   "chart.help": "scatter：シーケンス × レイテンシ · 線 = 移動平均（64）",
   "hist.title": "ヒストグラム（最新 256）",
-
   "exp.title": "イベントとエクスポート",
   "exp.csv": "CSV をエクスポート（アクティブ）",
   "exp.json": "JSON をエクスポート（すべて）",
   "exp.clear": "データをクリア",
   "exp.csvName": "latency",
-
   "log.connected": "接続しました",
   "log.disconnected": "切断しました",
   "log.connectError": "接続エラー：",
@@ -670,12 +650,8 @@ I18N_STRINGS.ja = {
   "log.timeout": "#{seq} タイムアウト（T1 が {us} µs 以内に届きませんでした）",
   "log.order": "#{seq} 順序異常（t1 が t0 より前）",
   "log.dropped": "#{seq} ドロップ（T0 が上書きされました）",
-
   "note.upFall": "T0 プルアップ + 立ち下がりエッジ：物理的アクションで遮断——接触スイッチの定番構成。",
-  "note.fRise": "T0 フロート、立ち上がりエッジ：シンプルな方式（モーションのパルス）。",
-  "note.fFloat": "注意：T0 がフロートモード——ノイズの恐れがあります。オシロスコープで極性を確認してください。",
   "note.ok": "自由な組み合わせです。",
-
   "unit.s": "秒",
   "unit.min": "分",
   footer: "サイドプロジェクト：medidor-rp2350 — ファームウェア + 静的ページ。"
@@ -687,7 +663,7 @@ I18N_STRINGS.ko = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: file:// 또는 GitHub Pages로 열기",
   "lang.label": "언어",
-
+  "theme.toggle": "테마 전환",
   "conn.title": "연결",
   "conn.connectBtn": "측정기에 연결",
   "conn.disconnectBtn": "연결 해제",
@@ -695,12 +671,10 @@ I18N_STRINGS.ko = {
   "conn.stateOk": "연결됨",
   "ws.warn": "이 브라우저에서는 WebSerial을 사용할 수 없습니다. Chrome/Edge(데스크톱)에서 HTTPS, localhost 또는 GitHub Pages를 사용하세요.",
   "ws.notAvail": "이 브라우저에서는 WebSerial을 사용할 수 없음",
-
   "wiring.title": "배선 방법 (Pico 2 핀아웃)",
   "wiring.svgAria": "Raspberry Pi Pico 2 핀아웃 다이어그램",
   "wiring.svgTitle": "Pico 2 핀아웃 — T0, T1_CLICK, T1_MOTION 및 GND",
   "wiring.legend": "T0 = 물리적 동작 · T1_CLICK = 클릭 응답 · T1_MOTION = 이동 응답 · GND = 공통 접지",
-
   "pin.step1": "<b>T0</b> (물리적 동작: 스위치 / 포토다이오드+컴패레이터) &rarr; <code>GP2</code> = 핀 <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (CH32V307의 클릭 출력) &rarr; <code>GP3</code> = 핀 <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (CH32V307의 이동 출력) &rarr; <code>GP4</code> = 핀 <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -708,7 +682,6 @@ I18N_STRINGS.ko = {
   "pin.step5": "<b>USB</b> &rarr; Pico 2 자체의 USB 포트 (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (온보드): 펌웨어가 동작 중일 때 500&nbsp;ms마다 깜빡입니다.",
   "pin.step7": "신호는 3.3&nbsp;V입니다 &mdash; 핀에 <b>5&nbsp;V를 인가하지 마세요</b>.",
-
   "cfg.title": "측정 설정",
   "cfg.t0pull.label": "T0 풀 / 물리",
   "cfg.t0pull.f": "플로팅 (풀 없음)",
@@ -720,11 +693,18 @@ I18N_STRINGS.ko = {
   "cfg.mode.label": "테스트할 축",
   "cfg.mode.c": "클릭 (T1_CLICK)",
   "cfg.mode.m": "이동 (T1_MOTION)",
-  "cfg.holdoff.label": "홀드오프 (µs)",
+  "cfg.preset.label": "프리셋",
+  "cfg.preset.custom": "사용자 지정 (수동)",
+  "cfg.preset.fita": "전도 테이프",
+  "cfg.preset.optical": "광학 스위치",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "누르면 전도 테이프가 접점을 닫으므로, 풀업된 T0가 LOW가 됨: 하강 엣지.",
+  "cfg.preset.note.optical": "마우스 폴링은 누를 때마다 하강 엣지의 톱니파를 만듭니다; 홀드오프가 여분 엣지를 버리고 첫 번째만 T0로 사용합니다.",
+  "cfg.preset.note.gx": "클릭이 마우스 레벨을 바꿉니다: T0 플로팅, 상승 엣지.",
+  "cfg.holdoff.label": "홀드오프 (ms)",
   "cfg.timeout.label": "타임아웃 / 워치독 (µs)",
   "cfg.apply": "설정 적용",
   "cfg.noteDefault": "자유 조합: 임의 T0 풀 × 엣지 × 축. 비정상적인 조합이면 여기에 경고가 표시됩니다.",
-
   "stats.title": "통계",
   "stat.last": "마지막 지연",
   "stat.avg": "평균 (활성)",
@@ -734,17 +714,14 @@ I18N_STRINGS.ko = {
   "stat.elapsed": "경과 시간",
   "stat.seq": "총 시퀀스",
   "stat.timouts": "타임아웃 / 드롭",
-
   "chart.title": "지연 프로필 (활성 모드)",
   "chart.help": "scatter: 시퀀스 × 지연 · 선 = 이동 평균 (64)",
   "hist.title": "히스토그램 (최근 256개)",
-
   "exp.title": "이벤트 및 내보내기",
   "exp.csv": "CSV 내보내기 (활성)",
   "exp.json": "JSON 내보내기 (전체)",
   "exp.clear": "데이터 지우기",
   "exp.csvName": "latency",
-
   "log.connected": "연결됨",
   "log.disconnected": "연결 해제됨",
   "log.connectError": "연결 오류: ",
@@ -753,12 +730,8 @@ I18N_STRINGS.ko = {
   "log.timeout": "#{seq} 타임아웃 (T1이 {us} µs 안에 도착하지 않음)",
   "log.order": "#{seq} 순서 이상 (t1이 t0보다 먼저)",
   "log.dropped": "#{seq} 드롭됨 (T0 덮어씀)",
-
   "note.upFall": "T0 풀업 + 하강 엣지: 물리적 동작이 차단됨 — 접점 스위치의 전형적인 조합.",
-  "note.fRise": "T0 플로팅, 상승 엣지: 간단한 방식 (모션 펄스).",
-  "note.fFloat": "주의: T0 플로팅 모드 — 노이즈 위험; 오실로스코프로 극성을 확인하세요.",
   "note.ok": "자유 조합 정상.",
-
   "unit.s": "초",
   "unit.min": "분",
   footer: "사이드 프로젝트: medidor-rp2350 — 펌웨어 + 정적 페이지."
@@ -770,7 +743,7 @@ I18N_STRINGS.ru = {
   "header.sub": "RP2350 · PIO timestamp · WebSerial · ",
   "header.hint": "brute-offline: откройте через file:// или GitHub Pages",
   "lang.label": "Язык",
-
+  "theme.toggle": "Сменить тему",
   "conn.title": "Подключение",
   "conn.connectBtn": "Подключиться к измерителю",
   "conn.disconnectBtn": "Отключиться",
@@ -778,12 +751,10 @@ I18N_STRINGS.ru = {
   "conn.stateOk": "подключено",
   "ws.warn": "WebSerial недоступен в этом браузере. Используйте Chrome/Edge (desktop) с HTTPS, localhost или GitHub Pages.",
   "ws.notAvail": "WebSerial недоступен в этом браузере",
-
   "wiring.title": "Подключение (распиновка Pico 2)",
   "wiring.svgAria": "Схема распиновки Raspberry Pi Pico 2",
   "wiring.svgTitle": "Распиновка Pico 2 — T0, T1_CLICK, T1_MOTION и GND",
   "wiring.legend": "T0 = физическое действие · T1_CLICK = ответ клика · T1_MOTION = ответ движения · GND = общая земля",
-
   "pin.step1": "<b>T0</b> (физическое действие: переключатель / фотодиод+компаратор) &rarr; <code>GP2</code> = контакт <b>4</b>&nbsp;<span class=\"sw t0\">■</span>",
   "pin.step2": "<b>T1_CLICK</b> (выход клика CH32V307) &rarr; <code>GP3</code> = контакт <b>5</b>&nbsp;<span class=\"sw clk\">■</span>",
   "pin.step3": "<b>T1_MOTION</b> (выход движения CH32V307) &rarr; <code>GP4</code> = контакт <b>6</b>&nbsp;<span class=\"sw mot\">■</span>",
@@ -791,7 +762,6 @@ I18N_STRINGS.ru = {
   "pin.step5": "<b>USB</b> &rarr; собственный USB-порт Pico 2 (WebSerial/CDC).",
   "pin.step6": "<b>LED GP25</b> (на борту): мигает каждые 500&nbsp;мс, пока прошивка работает.",
   "pin.step7": "Сигналы на 3,3&nbsp;В &mdash; <b>не подавайте 5&nbsp;В</b> на контакты.",
-
   "cfg.title": "Конфигурация измерения",
   "cfg.t0pull.label": "T0 подтяжка / физика",
   "cfg.t0pull.f": "float (без подтяжки)",
@@ -803,11 +773,18 @@ I18N_STRINGS.ru = {
   "cfg.mode.label": "Тестируемая ось",
   "cfg.mode.c": "Клик (T1_CLICK)",
   "cfg.mode.m": "Движение (T1_MOTION)",
-  "cfg.holdoff.label": "Holdoff (µs)",
+  "cfg.preset.label": "Пресет",
+  "cfg.preset.custom": "Своё (вручную)",
+  "cfg.preset.fita": "Проводящая лента",
+  "cfg.preset.optical": "Оптический переключатель",
+  "cfg.preset.gx": "GX click",
+  "cfg.preset.note.fita": "При нажатии проводящая лента замыкает контакт, поэтому подтянутый вверх T0 уходит в LOW: спадающий фронт.",
+  "cfg.preset.note.optical": "Опрос мыши даёт при каждом нажатии пилу спадающих фронтов; холдофф отбрасывает лишние фронты и берёт первый как T0.",
+  "cfg.preset.note.gx": "Клик меняет уровень мыши: нарастающий фронт при плавающем T0.",
+  "cfg.holdoff.label": "Holdoff (ms)",
   "cfg.timeout.label": "Timeout / watchdog (µs)",
   "cfg.apply": "Применить конфиг",
   "cfg.noteDefault": "Свободные комбинации: любая подтяжка T0 × фронт × ось. Предупреждение о необычной комбинации появится здесь.",
-
   "stats.title": "Статистика",
   "stat.last": "последняя задержка",
   "stat.avg": "среднее (активно)",
@@ -817,17 +794,14 @@ I18N_STRINGS.ru = {
   "stat.elapsed": "прошло времени",
   "stat.seq": "всего последовательность",
   "stat.timouts": "таймауты / потери",
-
   "chart.title": "Профиль задержки (активный режим)",
   "chart.help": "scatter: последовательность × задержки · линия = скользящее среднее (64)",
   "hist.title": "Гистограмма (последние 256)",
-
   "exp.title": "События и экспорт",
   "exp.csv": "Экспорт CSV (активный)",
   "exp.json": "Экспорт JSON (все)",
   "exp.clear": "Очистить данные",
   "exp.csvName": "latency",
-
   "log.connected": "подключено",
   "log.disconnected": "отключено",
   "log.connectError": "ошибка подключения: ",
@@ -836,12 +810,8 @@ I18N_STRINGS.ru = {
   "log.timeout": "#{seq} ТАЙМАУТ (T1 не пришёл за {us} µs)",
   "log.order": "#{seq} ПОРЯДОК (t1 раньше t0)",
   "log.dropped": "#{seq} ПОТЕРЯНО (T0 перезаписан)",
-
   "note.upFall": "T0 с pull-up и спадающим фронтом: физическое действие отключается — классическая комбинация контактного переключателя.",
-  "note.fRise": "T0 float, нарастающий фронт: простая схема (импульс движения).",
-  "note.fFloat": "Внимание: T0 в режиме float — риск помех; проверьте полярность осциллографом.",
   "note.ok": "Свободная комбинация допустима.",
-
   "unit.s": "с",
   "unit.min": "мин",
   footer: "Побочный проект: medidor-rp2350 — прошивка + статическая страница."
