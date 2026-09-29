@@ -112,5 +112,19 @@ ok("t() so devolve a chave crua no ultimo recurso",
 get(`I18N_STRINGS.ko[${JSON.stringify(probe)}] = ${JSON.stringify("ko-temp")}`);
 ok("t() volta a usar ko depois de restaurar", I18N.t(probe) === "ko-temp", I18N.t(probe));
 
+/* ---------- o texto estatico do index.html bate com a tabela en ---------- */
+/* O apply() sobrescreve tudo no load, então essa divergência não aparece na
+   tela — mas fica no HTML cru, no view-source e no crawler. A paridade acima
+   não pega isso, porque compara chaves, não valores. */
+const norm = (s) => s.replace(/\s+/g, " ").trim();
+const stale = [];
+for (const m of src("index.html").matchAll(/data-i18n="([A-Za-z0-9_.]+)"[^>]*>([\s\S]*?)<\//g)) {
+  const key = m[1];
+  const text = norm(m[2].replace(/<[^>]*>/g, ""));
+  if (!text || T.en[key] === undefined) continue;
+  if (text !== norm(T.en[key])) stale.push(key + ": " + text.slice(0, 60) + " != " + norm(T.en[key]).slice(0, 60));
+}
+ok("nenhum fallback estatico divergente no index.html", stale.length === 0, stale.join("\n      "));
+
 console.log((fail ? "FALHOU " : "ok ") + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);

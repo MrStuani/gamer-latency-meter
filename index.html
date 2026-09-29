@@ -29,7 +29,7 @@
         <h1 data-i18n="header.title">Gamer Peripheral Latency Meter</h1>
         <p class="sub">
           <span data-i18n="header.sub">RP2350 · PIO timestamp · WebSerial · </span>
-          <span id="conn-hint" data-i18n="header.hint">brute-offline: open via file:// or GitHub Pages</span>
+          <span id="conn-hint" data-i18n="header.hint">offline: open via file:// or GitHub Pages</span>
         </p>
       </div>
       <div class="head-tools">
@@ -52,7 +52,7 @@
         <span id="conn-state" class="state idle" data-i18n="conn.stateIdle">disconnected</span>
       </div>
       <div id="ws-warn" class="warn hidden" data-i18n="ws.warn">WebSerial is not available in this browser.
-        Use Chrome/Edge (desktop) with HTTPS or localhost/GitHub Pages.</div>
+        Use Chrome/Edge (desktop) with HTTPS, localhost or GitHub Pages.</div>
     </section>
 
     <!-- ===================== ligação / pinagem ===================== -->
@@ -209,7 +209,7 @@
         <label><span data-i18n="cfg.preset.label">Preset</span>
           <select id="cfg-preset">
             <option value="" selected data-i18n="cfg.preset.custom">Custom (manual)</option>
-            <option value="fita" data-i18n="cfg.preset.fita">Fita condutiva</option>
+            <option value="fita" data-i18n="cfg.preset.fita">Conductive tape</option>
             <option value="optical" data-i18n="cfg.preset.optical">Optical switch</option>
             <option value="gx" data-i18n="cfg.preset.gx">GX click</option>
           </select>
@@ -285,8 +285,7 @@
     <!-- ===================== relatório ===================== -->
     <section class="card">
       <h2 data-i18n="exp.title">Latency report</h2>
-      <p class="note" data-i18n="exp.hint">Both axes, human-readable latency (µs/ms) with
-        min · median · mean · p95 · p99 · max · std and a distribution.</p>
+      <p class="note" data-i18n="exp.hint">Both axes, human-readable latency (µs/ms): min · median · mean · p95 · p99 · max · std, plus a distribution.</p>
       <div class="row">
         <button id="btn-export-txt" disabled data-i18n="exp.txt">Report (.txt)</button>
         <button id="btn-export-csv" disabled data-i18n="exp.csv">Export CSV</button>
@@ -303,7 +302,7 @@
     </section>
   </main>
 
-  <footer><span data-i18n="footer">Side project: medidor-rp2350 — firmware + static page.</span></footer>
+  <footer><span data-i18n="footer">Side project: gamer-latency-meter — firmware + static page.</span></footer>
 
   <script src="i18n.js"></script>
   <script src="report.js"></script>
