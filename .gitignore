@@ -17,3 +17,6 @@ Thumbs.db
 .DS_Store
 .vscode/
 .idea/
+
+# relatório de amostra gerado por `node tests/report.test.mjs --write`
+tests/out.*

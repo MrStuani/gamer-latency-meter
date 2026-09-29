@@ -13,11 +13,12 @@ let rxBuf = new Uint8Array(0);
 let running = false;
 let startedAt = 0;
 let stCounters = { total: 0, timeouts: 0, drops: 0 };
+let devInfo = { ver: null, hz: null, order: 0, stray: 0 };
 let autoStatTimer = null;
 
 const $ = (id) => document.getElementById(id);
 const fmtUs = (ns) => (ns === undefined || ns === null) ? "—"
-                      : (ns / 1000).toFixed(ns < 100000 ? 2 : 1) + " µs";
+                      : Report.num(ns / 1000, ns < 100000 ? 2 : 1) + " µs";
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 /* ============================ tema claro/escuro ============================ */
@@ -49,32 +50,18 @@ function logLine(cls, text) {
 const log = { m: (t) => logLine("m", t), t: (t) => logLine("t", t), e: (t) => logLine("e", t) };
 
 /* ============================ estatísticas ============================ */
-function statsOf(arr) {
-  const n = arr.length;
-  if (!n) return null;
-  let min = Infinity, max = -Infinity, sum = 0;
-  for (const s of arr) {
-    if (s.lat < min) min = s.lat;
-    if (s.lat > max) max = s.lat;
-    sum += s.lat;
-  }
-  const mean = sum / n;
-  let s2 = 0;
-  for (const s of arr) s2 += (s.lat - mean) ** 2;
-  return { n, min, max, mean, std: Math.sqrt(s2 / n) };
-}
-
 function fmtClock(ms) {
   const s = ms / 1000;
-  return s < 90 ? s.toFixed(1) + " " + I18N.t("unit.s") : (s / 60).toFixed(1) + " " + I18N.t("unit.min");
+  return s < 90 ? Report.num(s, 1) + " " + I18N.t("unit.s") : Report.num(s / 60, 1) + " " + I18N.t("unit.min");
 }
 
 function refreshStats() {
   const modeArr = DATA[currentMode()];
-  const st = statsOf(modeArr);
+  const st = Report.statsOf(modeArr);
   $("st-last").textContent  = modeArr.length ? fmtUs(modeArr[modeArr.length - 1].lat) : "—";
   $("st-avg").textContent   = st ? fmtUs(st.mean) : "—";
   $("st-minmax").textContent = st ? fmtUs(st.min) + " / " + fmtUs(st.max) : "—";
+  for (const p of ["p50", "p95", "p99"]) $("st-" + p).textContent = st ? fmtUs(st[p]) : "—";
   $("st-std").textContent   = st ? fmtUs(st.std) : "—";
   $("st-count").textContent = st ? st.n : 0;
   $("st-elapsed").textContent = running && startedAt ? fmtClock(Date.now() - startedAt) : "0 s";
@@ -107,7 +94,7 @@ function drawScatter() {
     const y = padT + (i / 4) * (H - padT - padB);
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - 6, y); ctx.stroke();
     const v = max - (i / 4) * span;
-    ctx.fillText((v / 1000).toFixed(v / 1000 >= 10 ? 1 : 2) + "ms", 2, y + 3);
+    ctx.fillText(Report.num(v / 1000, v / 1000 >= 10 ? 1 : 2) + "ms", 2, y + 3);
   }
 
   const xFor = (i) => padL + (i / Math.max(1, use.length - 1)) * (W - padL - 6);
@@ -188,13 +175,23 @@ function decodeText(chunk) {
 }
 
 function handleText(t) {
-  if (!t) return;
-  if (t.startsWith("#")) {
-    if (t.includes("STAT")) log.m(t);         // linha de status crua
-    else if (t.startsWith("#ACK")) log.m(t);
-    else if (t.startsWith("#ERR")) log.e(t);
-    else if (t.startsWith("#VER")) log.m(t);
-    else log.m(t);
+  if (!t || !t.startsWith("#")) return;
+  if (t.startsWith("#STAT")) { parseStat(t); log.m(t); return; }
+  if (t.startsWith("#VER")) {
+    devInfo.ver = t.replace(/^#VER\s*/i, "").trim() || null;
+    log.m(t);
+    return;
+  }
+  log.m(t);
+}
+
+function parseStat(t) {
+  const re = /(\w+)=(\S+)/g;
+  let m;
+  while ((m = re.exec(t)) !== null) {
+    if (m[1] === "hz") devInfo.hz = Number(m[2]) || null;
+    else if (m[1] === "order") devInfo.order = Number(m[2]) || 0;
+    else if (m[1] === "stray") devInfo.stray = Number(m[2]) || 0;
   }
 }
 
@@ -286,9 +283,12 @@ function setUi(on) {
   $("btn-stop").disabled = !on;
   $("btn-stat").disabled = !on;
   $("btn-reset").disabled = !on;
-  $("btn-export-csv").disabled = !DATA[currentMode()].length;
-  $("btn-export-json").disabled = !DATA.click.length && !DATA.motion.length;
-  $("btn-clear").disabled = !DATA.click.length && !DATA.motion.length;
+  const anyData = DATA.click.length > 0 || DATA.motion.length > 0;
+  EXPORT_KINDS.forEach((kind) => {
+    const btn = $("btn-export-" + kind);
+    if (btn) btn.disabled = !anyData;
+  });
+  $("btn-clear").disabled = !anyData;
   const st = $("conn-state");
   st.className = "state " + (on ? "ok" : "idle");
   st.textContent = on ? I18N.t("conn.stateOk") : I18N.t("conn.stateIdle");
@@ -365,11 +365,14 @@ function bindUI() {
     (id) => $(id).addEventListener("change", cfgNote));
   cfgNote();
 
-  $("btn-export-csv").onclick = exportCsv;
-  $("btn-export-json").onclick = exportJson;
+  EXPORT_KINDS.forEach((kind) => {
+    const btn = $("btn-export-" + kind);
+    if (btn) btn.onclick = () => exportReport(kind);
+  });
   $("btn-clear").onclick = () => {
     DATA.click.length = 0; DATA.motion.length = 0;
     stCounters = { total: 0, timeouts: 0, drops: 0 };
+    devInfo.order = 0; devInfo.stray = 0;
     setUi(false); setUi(true); redraw();
   };
 
@@ -385,25 +388,22 @@ function bindUI() {
 }
 
 /* ============================ export ============================ */
-function exportCsv() {
-  const arr = DATA[currentMode()];
-  const lines = ["seq,mode,t0_ts,t1_ts,lat_ns", ...arr.map(s =>
-    `${s.seq},${currentMode()},${s.t0},${s.t1},${s.lat}`)];
-  download(blob(lines.join("\n")), `${I18N.t("exp.csvName")}_${currentMode()}_${ts()}.csv`, "text/csv");
+const EXPORT_KINDS = ["txt", "csv", "md", "json"];
+
+function reportContext() {
+  return {
+    data: DATA,
+    counters: stCounters,
+    config: readConfig(),
+    dev: devInfo,
+    elapsedMs: running && startedAt ? Date.now() - startedAt : 0
+  };
 }
 
-function exportJson() {
-  const obj = {
-    firmware: "medidor-rp2350 v1.0.0",
-    exported: new Date().toISOString(),
-    config: readConfig(),
-    stats: {
-      total: stCounters.total, timeouts: stCounters.timeouts, drops: stCounters.drops,
-      click: statsOf(DATA.click), motion: statsOf(DATA.motion)
-    },
-    click: DATA.click, motion: DATA.motion
-  };
-  download(blob(JSON.stringify(obj, null, 1)), `${I18N.t("exp.csvName")}_all_${ts()}.json`, "application/json");
+function exportReport(kind) {
+  const out = Report.build(reportContext());
+  const type = out.mime[kind];
+  download(blob(out[kind], type), `${I18N.t("exp.csvName")}_${ts()}.${out.ext[kind]}`, type);
 }
 
 function readConfig() {

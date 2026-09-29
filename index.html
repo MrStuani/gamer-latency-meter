@@ -3,8 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Descrição e Open Graph ficam em inglês e estáticos de propósito: quem
+       compartilha é o crawler, sem JS — não dá para versionar por idioma. -->
   <title data-i18n="meta.title">Gamer Peripheral Latency Meter</title>
+  <meta name="description" content="Measure mouse and keyboard latency on your own bench: a CH32V307 USB-HID translator, an RP2350 PIO timestamper and a zero-dependency WebSerial app with 10 languages." />
+  <meta name="color-scheme" content="dark light" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Gamer Peripheral Latency Meter" />
+  <meta property="og:title" content="Gamer Peripheral Latency Meter" />
+  <meta property="og:description" content="Bench-measure peripheral latency: CH32V307 USB-HID translator + RP2350 PIO timestamps, 13.3 ns resolution, reports in txt/md/csv/json." />
+  <meta property="og:url" content="https://mrstuani.github.io/gamer-latency-meter/" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M7 21h3V11H7zM13 21h3V7h-3zM19 21h3v-6h-3z' fill='%2339d0a0'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    /* aplica o tema salvo antes do primeiro paint (evita flash); sem isso, o :root escuro vale */
+    try { if (localStorage.getItem("theme") === "light") document.documentElement.dataset.theme = "light"; } catch {}
+  </script>
 </head>
 <body>
   <header>
@@ -243,6 +259,9 @@
         <div class="stat"><span class="k" data-i18n="stat.last">last latency</span><span class="v" id="st-last">—</span></div>
         <div class="stat"><span class="k" data-i18n="stat.avg">average (active)</span><span class="v" id="st-avg">—</span></div>
         <div class="stat"><span class="k" data-i18n="stat.minmax">min / max</span><span class="v" id="st-minmax">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.p50">median (p50)</span><span class="v" id="st-p50">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.p95">p95</span><span class="v" id="st-p95">—</span></div>
+        <div class="stat"><span class="k" data-i18n="stat.p99">p99</span><span class="v" id="st-p99">—</span></div>
         <div class="stat"><span class="k" data-i18n="stat.std">std deviation</span><span class="v" id="st-std">—</span></div>
         <div class="stat"><span class="k" data-i18n="stat.count">samples (active)</span><span class="v" id="st-count">0</span></div>
         <div class="stat"><span class="k" data-i18n="stat.elapsed">elapsed time</span><span class="v" id="st-elapsed">0 s</span></div>
@@ -263,14 +282,23 @@
       <canvas id="chart-hist" width="920" height="180"></canvas>
     </section>
 
-    <!-- ===================== log e export ===================== -->
+    <!-- ===================== relatório ===================== -->
     <section class="card">
-      <h2 data-i18n="exp.title">Events &amp; export</h2>
+      <h2 data-i18n="exp.title">Latency report</h2>
+      <p class="note" data-i18n="exp.hint">Both axes, human-readable latency (µs/ms) with
+        min · median · mean · p95 · p99 · max · std and a distribution.</p>
       <div class="row">
-        <button id="btn-export-csv" disabled data-i18n="exp.csv">Export CSV (active)</button>
-        <button id="btn-export-json" disabled data-i18n="exp.json">Export JSON (all)</button>
+        <button id="btn-export-txt" disabled data-i18n="exp.txt">Report (.txt)</button>
+        <button id="btn-export-csv" disabled data-i18n="exp.csv">Export CSV</button>
+        <button id="btn-export-md" disabled data-i18n="exp.md">Export Markdown</button>
+        <button id="btn-export-json" disabled data-i18n="exp.json">Export JSON</button>
         <button id="btn-clear" disabled data-i18n="exp.clear">Clear data</button>
       </div>
+    </section>
+
+    <!-- ===================== log de eventos ===================== -->
+    <section class="card">
+      <h2 data-i18n="log.title">Event log</h2>
       <ul id="event-log" class="log"></ul>
     </section>
   </main>
@@ -278,6 +306,7 @@
   <footer><span data-i18n="footer">Side project: medidor-rp2350 — firmware + static page.</span></footer>
 
   <script src="i18n.js"></script>
+  <script src="report.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
