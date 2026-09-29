@@ -5,15 +5,16 @@
 ```
 ┌─────────────┐   T0   ┌────────────────────────────┐  USB-CDC   ┌──────────┐
 │ física/user │ ──────▶│  medidor RP2350 (Pico 2)  │ ◀─────────▶│  página  │
-│ "tradutor"  │        │  PIO 3×SM + DMA + FSM     │   WebSerial│   web    │
-│             │T1_CLICK│  0xAA <16-byte frames>    │ ─────────▶│          │
+│ "tradutor"  │        │  PIO 3×SM + FSM           │   WebSerial│   web    │
+│             │T1_CLICK│  0xAA <20-byte frames>    │ ─────────▶│          │
 │             │T1_MOTN┘└────────────────────────────┘           └──────────┘
 ```
 
 - **T0** — ground truth: sinal físico (chave/contato mecânico) rewireado pelo
   usuário conforme o teste.
-- **T1_CLICK / T1_MOTION** — saídas do circuito "tradutor" (ex: firmware
-  CH32V307 que emite pulso/level a partir do relatório HID).
+- **T1_CLICK / T1_MOTION** — saídas do circuito "tradutor" (firmware
+  CH32V307 — também compila p/ CH32V305, mesma linha `D8C` — que emite
+  pulso/level a partir do relatório HID).
 - O **RP2350** timestamps as bordas de **T0, T1_CLICK, T1_MOTION** via 3 SMs
   PIO (captura de borda; nunca GPIO IRQ — ver `edge_ts.pio`) e calcula
   a latência **T1 − T0**.
@@ -33,16 +34,22 @@ lat_ns        = lat_ciclos × 1e9 / f_clk
 
 | Parâmetro                    | Valor                     |
 |------------------------------|---------------------------|
-| Relógio do sistema (default) | 250 MHz (RP2350)          |
+| Relógio do sistema (default) | 150 MHz (RP2350 / Pico 2) |
 | Resolução                    | 2 ciclos PIO              |
-| Resolução @250 MHz           | ~8 ns                     |
-| Pulso mínimo detectável      | ~2 ciclos (~16 ns @250 MHz)|
+| Resolução @150 MHz           | ~13,3 ns                  |
+| Pulso mínimo detectável      | ~2 ciclos (~13 ns @150 MHz)|
 | Skew de arme entre SMs       | < ~200 ns (ver README: scope) |
 
-> ⚠️ Pulso de motion do sensor é estimado em **~10 ns**. Muito perto do
-> limiar de ~26 ns a 150 MHz. **Antes de confiar em números**, alimente o
-> T1_MOTION com um gerador de pulso de referência no osciloscópio e ajuste
-> o clock do sistema (200–250 MHz) se precisar.
+> O firmware **não** altera o clock do chip: lê o relógio real com
+> `clock_get_hz(clk_sys)` e o reporta na linha `STAT` (`hz=...`). O default do
+> Pico 2 é 150 MHz — só use outro valor se o seu build fixar o clock (overclock)
+> explicitamente, e confira o `hz=` de qualquer forma.
+
+> ⚠️ Pulso de motion do sensor é estimado em **~10 ns**, na mesma ordem do
+> pulso mínimo detectável de ~2 ciclos (~13 ns a 150 MHz) — pulsos tão curtos
+> podem ser perdidos dependendo da borda/sync do pino. **Antes de confiar em
+> números**, alimente o T1_MOTION com um gerador de pulso de referência no
+> osciloscópio.
 
 ## Protocolo serial (CDC 115200-8N1, Teensy-style binary + texto)
 
@@ -124,6 +131,45 @@ T0DET ─▶ novo T0 ─▶ DROPPED (mantém T0 recente)
 ## Estatísticas expostas (`STAT`)
 
 `seq_total`, `click`, `motion`, `timeouts`, `ring_peak`, config ativa e clock.
+
+## Relatórios (lado web)
+
+O `STAT` éDiagnostics bruto; a camada web (`report.js`) é quem converte os
+frames em algo legível. Regras de conversão — o firmware **nunca** muda unidades:
+
+```
+lat_µs   = lat_ns / 1e3        (exibição abaixo de 1 ms)
+lat_ms   = lat_ns / 1e6        (exibição a partir de 1 ms)
+unidade  = µs se a mediana do eixo < 1 ms, senão ms   (1 unidade por bloco)
+```
+
+| Formato | Conteúdo |
+|----------|----------|
+| `.txt` | cabeçalho (data, `#VER`, `hz=`, resolução, config, duração, descartados), seções por eixo, min/mediana/média/p95/p99/máx/desvio, histograma ASCII e as 20 piores amostras com `seq` |
+| `.md` | os mesmos números em tabelas Markdown |
+| `.csv` | bloco por eixo: metadados em `#`, colunas `"sample","seq","latency_us|latency_ms"`, BOM UTF-8 |
+| `.json` | `schema: gamer-latency-meter/report@1`; `stats` em ns exatos + `display` formatado; `readings` só com `seq` + `latency_ns` |
+
+Decisões deliberadas:
+
+- **Percentis por nearest-rank** (`p50`/`p95`/`p99`) sobre o array ordenado.
+- **Histograma limitado ao p99** — as 20 faixas cobrem `min → p99` e tudo acima
+  cai na última (`≥ x`), para que um outlier não achate a distribuição.
+- **Idioma só na superfície, nunca nos dados.** `.txt`/`.md` e as linhas `#` do
+  `.csv` seguem o idioma da interface; o **bloco de dados do `.csv`**
+  (`sample`,`seq`,`latency_us|latency_ms`) e as **chaves do `.json`** ficam
+  sempre em inglês, para que duas pessoas em idiomas diferentes gerem colunas
+  idênticas. Schema legível por máquina não pode variar.
+- **Locale só na exibição.** Valores numéricos em prosa passam por
+  `Intl.NumberFormat` do idioma da UI (pt-BR mostra `1,08 ms`, o resto
+  `1.08 ms`), mas a coluna de dados do CSV e os campos numéricos do JSON usam
+  **ponto e sem separador de milhar**. Como `Intl` arredonda empates para
+  cima, `1.005` aparece como `1,01` na tela e `1.00` no CSV — divergência de
+  arredondamento conhecida e aceita, já que o dado bruto é sempre o mesmo.
+- **`t0_ts`/`t1_ts` não são exportados**: `lat_ns` já é o resultado e o clock vem
+  no cabeçalho (`hz=`), então nada se perde.
+- Metadados em `.csv` nunca contêm aspas cruas (senão o Excel engole linhas
+  seguintes); os cabeçalhos ficam entre aspas duplas.
 
 ## Pinos (Pico 2)
 
