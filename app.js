@@ -338,8 +338,150 @@ function cfgNote() {
   pnote.classList.toggle("hidden", !key);
 }
 
+/* ============================ zoom do pinout ============================ */
+const PIN_MIN_SCALE = 1;
+const PIN_MAX_SCALE = 6;
+let pinScale = 1;
+let pinBaseWidth = 0;
+let pinClone = null;
+let pinPrevFocus = null;
+
+function pinSetScale(next, clientX, clientY) {
+  const vp = $("pinout-viewport");
+  if (!pinClone || !vp) return;
+  next = Math.min(PIN_MAX_SCALE, Math.max(PIN_MIN_SCALE, next));
+  if (Math.abs(next - pinScale) < 0.001) return;
+
+  const rect = vp.getBoundingClientRect ? vp.getBoundingClientRect() : { left: 0, top: 0 };
+  const anchorX = typeof clientX === "number" ? clientX - rect.left : vp.clientWidth / 2;
+  const anchorY = typeof clientY === "number" ? clientY - rect.top : vp.clientHeight / 2;
+  const contentX = vp.scrollLeft + anchorX;
+  const contentY = vp.scrollTop + anchorY;
+
+  const prev = pinScale;
+  pinScale = next;
+  pinClone.style.width = Math.round(pinBaseWidth * pinScale) + "px";
+
+  const ratio = pinScale / prev;
+  vp.scrollLeft = contentX * ratio - anchorX;
+  vp.scrollTop = contentY * ratio - anchorY;
+
+  const level = $("pin-zoom-level");
+  if (level) level.textContent = Math.round(pinScale * 100) + "%";
+}
+
+function pinReset() {
+  const vp = $("pinout-viewport");
+  if (!vp) return;
+  pinBaseWidth = Math.max(320, vp.clientWidth - 32);
+  pinScale = 1;
+  if (pinClone) pinClone.style.width = pinBaseWidth + "px";
+  vp.scrollLeft = 0;
+  vp.scrollTop = 0;
+  const level = $("pin-zoom-level");
+  if (level) level.textContent = "100%";
+}
+
+function pinOpen() {
+  const src = $("pin-svg");
+  const modal = $("pinout-modal");
+  const vp = $("pinout-viewport");
+  if (!src || !modal || !vp || typeof src.cloneNode !== "function") return;
+
+  while (vp.firstChild) vp.removeChild(vp.firstChild);
+  pinClone = src.cloneNode(true);
+  pinClone.removeAttribute("id");
+  pinClone.removeAttribute("data-i18n-attr");
+  vp.appendChild(pinClone);
+
+  pinPrevFocus = document.activeElement || null;
+  modal.classList.remove("hidden");
+  if (document.body) document.body.classList.add("pinout-lock");
+
+  pinBaseWidth = Math.max(320, vp.clientWidth - 32);
+  pinScale = 1;
+  pinClone.style.width = pinBaseWidth + "px";
+  vp.scrollLeft = 0;
+  vp.scrollTop = 0;
+  const level = $("pin-zoom-level");
+  if (level) level.textContent = "100%";
+  const close = $("pin-close");
+  if (close && close.focus) close.focus();
+}
+
+function pinClose() {
+  const modal = $("pinout-modal");
+  const vp = $("pinout-viewport");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  if (document.body) document.body.classList.remove("pinout-lock");
+  if (vp) while (vp.firstChild) vp.removeChild(vp.firstChild);
+  pinClone = null;
+  if (pinPrevFocus && pinPrevFocus.focus) pinPrevFocus.focus();
+  pinPrevFocus = null;
+}
+
+function bindPinoutZoom() {
+  const src = $("pin-svg");
+  const openBtn = $("btn-pin-zoom");
+  const modal = $("pinout-modal");
+  const vp = $("pinout-viewport");
+  if (!src || !openBtn || !modal || !vp) return;
+
+  const open = (e) => { if (e) e.preventDefault(); pinOpen(); };
+  src.addEventListener("click", open);
+  openBtn.addEventListener("click", open);
+
+  $("pin-zoom-in").addEventListener("click", () => pinSetScale(pinScale * 1.35));
+  $("pin-zoom-out").addEventListener("click", () => pinSetScale(pinScale / 1.35));
+  $("pin-zoom-reset").addEventListener("click", pinReset);
+  $("pin-close").addEventListener("click", pinClose);
+  modal.addEventListener("click", (e) => { if (e.target === modal) pinClose(); });
+
+  vp.addEventListener("wheel", (e) => {
+    if (!pinClone) return;
+    e.preventDefault();
+    pinSetScale(pinScale * (e.deltaY < 0 ? 1.2 : 1 / 1.2), e.clientX, e.clientY);
+  }, { passive: false });
+
+  vp.addEventListener("dblclick", (e) => {
+    if (!pinClone) return;
+    pinSetScale(pinScale < 2 ? 2.5 : 1, e.clientX, e.clientY);
+  });
+
+  let drag = null;
+  vp.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, left: vp.scrollLeft, top: vp.scrollTop };
+    vp.classList.add("dragging");
+    if (vp.setPointerCapture) vp.setPointerCapture(e.pointerId);
+  });
+  vp.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    vp.scrollLeft = drag.left - (e.clientX - drag.x);
+    vp.scrollTop = drag.top - (e.clientY - drag.y);
+  });
+  const endDrag = () => { drag = null; vp.classList.remove("dragging"); };
+  vp.addEventListener("pointerup", endDrag);
+  vp.addEventListener("pointercancel", endDrag);
+
+  document.addEventListener("keydown", (e) => {
+    if (modal.classList.contains("hidden")) return;
+    if (e.key === "Escape") { e.preventDefault(); pinClose(); }
+    else if (e.key === "+" || e.key === "=") { e.preventDefault(); pinSetScale(pinScale * 1.35); }
+    else if (e.key === "-" || e.key === "_") { e.preventDefault(); pinSetScale(pinScale / 1.35); }
+  });
+
+  window.addEventListener("resize", () => {
+    if (modal.classList.contains("hidden")) return;
+    pinBaseWidth = Math.max(320, vp.clientWidth - 32);
+    if (pinClone) pinClone.style.width = Math.round(pinBaseWidth * pinScale) + "px";
+  });
+}
+
 /* ============================ eventos UI ============================ */
 function bindUI() {
+  bindPinoutZoom();
   $("btn-connect").onclick = connect;
   $("btn-disconnect").onclick = disconnect;
   $("btn-theme").onclick = () =>
